@@ -1,0 +1,998 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="企业职业健康文档管理平台本地原型，覆盖企业建档、资料归集、文档生成、审核签发与归档追溯。">
+  <title>职安文档云 · 企业管理与文档生成原型</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <svg class="svg-sprite" aria-hidden="true">
+    <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></symbol>
+    <symbol id="i-building" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16M16 9h2a2 2 0 0 1 2 2v10M8 7h4M8 11h4M8 15h4M8 21v-2h4v2M2 21h20"/></symbol>
+    <symbol id="i-folder" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/><path d="M3 10h18"/></symbol>
+    <symbol id="i-doc-plus" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z"/><path d="M14 2v6h6M9 15h6M12 12v6"/></symbol>
+    <symbol id="i-archive" viewBox="0 0 24 24"><path d="M4 7h16v14H4zM3 3h18v4H3z"/><path d="M9 12h6"/></symbol>
+    <symbol id="i-alert" viewBox="0 0 24 24"><path d="M10.3 3.6 2.7 17a2 2 0 0 0 1.7 3h15.2a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-bell" viewBox="0 0 24 24"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9M10 21h4"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4M7 9l5-5 5 5M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3"/></symbol>
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12M7 11l5 5 5-5M4 20h16"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="2.5"/></symbol>
+    <symbol id="i-people" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M4 6h16M7 12h10M10 18h4"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 8a7 7 0 0 1 11.4-1.5L20 9M4 15l2.5 2.5A7 7 0 0 0 18 16"/></symbol>
+  </svg>
+
+  <div class="app-frame" id="appFrame" hidden>
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark"><span></span><span></span><span></span></div>
+        <div>
+          <strong>职安文档云</strong>
+          <small>Enterprise Docs</small>
+        </div>
+      </div>
+
+      <div class="workspace-switch">
+        <div class="workspace-avatar">华</div>
+        <div class="workspace-copy">
+          <span>当前企业空间</span>
+          <strong>华东精密制造（示例）</strong>
+        </div>
+        <svg class="icon small"><use href="#i-chevron"></use></svg>
+      </div>
+
+      <nav class="side-nav" aria-label="主导航">
+        <p class="nav-label">文档业务</p>
+        <button class="nav-item active" type="button" data-view="dashboard">
+          <svg class="icon"><use href="#i-grid"></use></svg><span>工作台</span>
+        </button>
+        <button class="nav-item" type="button" data-view="enterprise">
+          <svg class="icon"><use href="#i-building"></use></svg><span>企业档案</span><span class="nav-badge">1</span>
+        </button>
+        <button class="nav-item" type="button" data-view="library">
+          <svg class="icon"><use href="#i-folder"></use></svg><span>资料中心</span><span class="nav-count">43</span>
+        </button>
+        <button class="nav-item" type="button" data-view="generate">
+          <svg class="icon"><use href="#i-doc-plus"></use></svg><span>文档生成</span><span class="nav-count">6</span>
+        </button>
+        <button class="nav-item" type="button" data-view="archive">
+          <svg class="icon"><use href="#i-archive"></use></svg><span>档案库</span>
+        </button>
+
+        <p class="nav-label nav-label-spaced" hidden>项目诊断</p>
+        <button class="nav-item" type="button" data-view="gaps" hidden>
+          <svg class="icon"><use href="#i-alert"></use></svg><span>功能缺口</span><span class="nav-badge warning">9</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <div class="scope-card">
+          <div class="scope-icon"><svg class="icon"><use href="#i-shield"></use></svg></div>
+          <div>
+            <strong>非智能体版本</strong>
+            <span>聚焦企业文档生产闭环</span>
+          </div>
+        </div>
+        <button class="sidebar-user" id="sidebarUser" type="button" aria-label="打开账户菜单">
+          <div class="avatar">林</div>
+          <div><strong>林晓</strong><span>文档管理员</span></div>
+          <svg class="icon small"><use href="#i-more"></use></svg>
+        </button>
+      </div>
+    </aside>
+
+    <button class="mobile-scrim" id="mobileScrim" type="button" aria-label="关闭导航" hidden></button>
+
+    <div class="main-shell">
+      <header class="topbar">
+        <button class="icon-button mobile-menu" id="mobileMenu" type="button" aria-label="打开导航">
+          <svg class="icon"><use href="#i-menu"></use></svg>
+        </button>
+        <div class="topbar-context">
+          <span>企业管理</span>
+          <svg class="icon tiny"><use href="#i-chevron"></use></svg>
+          <strong id="currentPageLabel">工作台</strong>
+        </div>
+        <div class="topbar-tools">
+          <label class="global-search">
+            <svg class="icon"><use href="#i-search"></use></svg>
+            <input id="globalSearch" type="search" placeholder="搜索企业、文档或任务">
+            <kbd>⌘ K</kbd>
+          </label>
+          <span class="local-pill"><span class="pulse"></span>本地预览</span>
+          <button class="icon-button notification-button" type="button" data-toast="当前有 3 项待审核、2 项资料校验异常。">
+            <svg class="icon"><use href="#i-bell"></use></svg><i></i>
+          </button>
+          <div class="account-area" id="accountArea">
+            <button class="topbar-avatar" id="userMenuButton" type="button" aria-haspopup="menu" aria-expanded="false" aria-label="打开账户菜单">林</button>
+            <div class="account-menu" id="accountMenu" role="menu" hidden>
+              <div class="account-menu-head">
+                <div class="account-avatar">林</div>
+                <div class="account-copy">
+                  <strong>林晓</strong>
+                  <span>lin.xiao@example.com</span>
+                  <small><i></i>文档管理员 · 当前在线</small>
+                </div>
+              </div>
+              <div class="account-menu-section">
+                <button class="account-menu-item" type="button" role="menuitem" data-toast="演示：打开个人资料与账号设置">
+                  <svg class="icon"><use href="#i-shield"></use></svg><span>账号与安全</span><kbd>⌘ ,</kbd>
+                </button>
+                <button class="account-menu-item" type="button" role="menuitem" data-toast="演示：查看当前账号的操作日志">
+                  <svg class="icon"><use href="#i-clock"></use></svg><span>操作日志</span>
+                </button>
+              </div>
+              <div class="account-menu-divider"></div>
+              <button class="account-menu-item danger" id="logoutButton" type="button" role="menuitem">
+                <svg class="icon"><use href="#i-arrow"></use></svg><span>退出登录</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main class="main-content">
+        <section class="view active" id="view-dashboard" data-title="工作台">
+          <div class="page-heading">
+            <div>
+              <p class="eyebrow">2026 年度 · 职业健康管理</p>
+              <h1>文档工作台</h1>
+              <p>从企业建档到档案归档，统一管理职业健康文档生产链路。</p>
+            </div>
+            <div class="heading-actions">
+              <button class="button button-secondary" type="button" data-go="archive">
+                <svg class="icon"><use href="#i-archive"></use></svg>查看档案库
+              </button>
+              <button class="button button-primary" type="button" data-go="generate">
+                进入文档生成<svg class="icon"><use href="#i-arrow"></use></svg>
+              </button>
+            </div>
+          </div>
+
+          <div class="scope-banner">
+            <div class="scope-banner-icon"><svg class="icon"><use href="#i-shield"></use></svg></div>
+            <div><strong>产品范围已锁定</strong><span>本原型只演示企业管理与文档生成，不包含对话采集、智能问答、报告解读等智能体能力。</span></div>
+            <button class="text-link" type="button" data-go="gaps">查看范围说明<svg class="icon tiny"><use href="#i-arrow"></use></svg></button>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon blue"><svg class="icon"><use href="#i-folder"></use></svg></span><span class="trend up" id="dashboardCompletenessTrend">当前账号</span></div>
+              <div class="stat-main"><div><span id="dashboardCompletenessLabel">资料完整度</span><strong id="dashboardCompletenessValue">76<small>%</small></strong></div><div class="mini-ring" id="dashboardCompletenessRing" style="--value:76"><span id="dashboardCompletenessCount">43</span></div></div>
+              <p id="dashboardCompletenessHint">已归集 43 份 · 缺失 7 份</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon indigo"><svg class="icon"><use href="#i-doc-plus"></use></svg></span><span class="trend neutral" id="dashboardReviewTrend">解析后待核查</span></div>
+              <div class="stat-main"><div><span id="dashboardReviewLabel">待核查资料</span><strong id="dashboardReviewCount">12<small> 份</small></strong></div><div class="spark-bars" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div></div>
+              <p id="dashboardReviewHint">解析完成后在工作台逐份核查</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon amber"><svg class="icon"><use href="#i-clock"></use></svg></span><span class="urgent-dot" id="dashboardParsedUrgent">解析结果</span></div>
+              <div class="stat-main"><div><span id="dashboardParsedLabel">已解析文件</span><strong id="dashboardParsedCount">3<small> 份</small></strong></div><div class="avatar-stack" id="dashboardParsedAvatars"><i>已</i><i>析</i></div></div>
+              <p id="dashboardParsedHint">文件内容已保存在当前企业空间</p>
+            </article>
+            <article class="stat-card">
+              <div class="stat-top"><span class="stat-icon red"><svg class="icon"><use href="#i-alert"></use></svg></span><span class="trend danger">需处理</span></div>
+              <div class="stat-main"><div><span id="dashboardIssueLabel">解析异常</span><strong id="dashboardIssueCount">4<small> 项</small></strong></div><div class="risk-glyph"><span></span><span></span><span></span></div></div>
+              <p id="dashboardIssueHint">失败或需 OCR 的文件会列在这里</p>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <article class="panel workflow-panel">
+              <div class="panel-head">
+                <div><h2 id="dashboardWorkflowTitle">年度建档进度</h2><p id="dashboardWorkflowSubtitle">文档包：2026 年度职业健康管理资料包</p></div>
+                <div class="progress-summary"><strong id="dashboardWorkflowPercent">62%</strong><span>整体进度</span></div>
+              </div>
+              <div class="linear-progress"><span id="dashboardWorkflowBar" style="width:62%"></span></div>
+              <div class="workflow-steps" id="dashboardWorkflowSteps">
+                <div class="workflow-step done">
+                  <div class="step-dot"><svg class="icon"><use href="#i-check"></use></svg></div>
+                  <strong>企业建档</strong><span>基本信息已维护</span>
+                </div>
+                <div class="workflow-step done">
+                  <div class="step-dot"><svg class="icon"><use href="#i-check"></use></svg></div>
+                  <strong>资料归集</strong><span>四类资料 43 份</span>
+                </div>
+                <div class="workflow-step active">
+                  <div class="step-dot">3</div>
+                  <strong>规则匹配</strong><span>岗位映射校验中</span>
+                </div>
+                <div class="workflow-step">
+                  <div class="step-dot">4</div>
+                  <strong>模板生成</strong><span>待规则完成</span>
+                </div>
+                <div class="workflow-step">
+                  <div class="step-dot">5</div>
+                  <strong>审核签发</strong><span>等待生成结果</span>
+                </div>
+                <div class="workflow-step">
+                  <div class="step-dot">6</div>
+                  <strong>归档追溯</strong><span>等待签发</span>
+                </div>
+              </div>
+              <div class="panel-footer-note" id="dashboardWorkflowNote">
+                <svg class="icon"><use href="#i-alert"></use></svg>
+                <span>规则匹配被阻断：员工名册未导入，24 个岗位中有 6 个尚未绑定危害因素。</span>
+                <button class="text-link" type="button" data-go="enterprise">处理映射</button>
+              </div>
+            </article>
+
+            <aside class="todo-panel">
+              <div class="panel-head compact">
+                <div><h2>今日待办</h2><p>按风险与截止时间排序</p></div>
+                <button class="icon-button" type="button" data-toast="演示：已刷新待办列表"><svg class="icon"><use href="#i-refresh"></use></svg></button>
+              </div>
+              <div class="todo-list" id="dashboardTodoList">
+                <button class="todo-item" type="button" data-go="library">
+                  <span class="todo-priority high">高</span>
+                  <span class="todo-copy"><strong>补充 2026 年检测报告</strong><small>缺失 2 个车间 · 截止 11-18</small></span>
+                  <svg class="icon small"><use href="#i-chevron"></use></svg>
+                </button>
+                <button class="todo-item" type="button" data-go="enterprise">
+                  <span class="todo-priority high">高</span>
+                  <span class="todo-copy"><strong>导入员工名册</strong><small>影响 2 份文档生成</small></span>
+                  <svg class="icon small"><use href="#i-chevron"></use></svg>
+                </button>
+                <button class="todo-item" type="button" data-go="generate">
+                  <span class="todo-priority mid">中</span>
+                  <span class="todo-copy"><strong>校验 4 份待生成文档</strong><small>模板 v2.3 · 5 分钟前更新</small></span>
+                  <svg class="icon small"><use href="#i-chevron"></use></svg>
+                </button>
+              </div>
+              <div class="todo-progress" id="dashboardTodoProgress">
+                <div><span>今日完成</span><strong>3 / 6</strong></div>
+                <div class="segmented-progress"><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i></div>
+              </div>
+            </aside>
+          </div>
+
+          <article class="panel dashboard-review-panel" id="dashboardReviewPanel" hidden>
+            <div class="panel-head">
+              <div><h2>上传资料核查</h2><p id="dashboardReviewCopy">逐份打开上传文件，确认解析内容后标记已核查。</p></div>
+              <div class="dashboard-review-actions"><span class="review-count-pill" id="dashboardReviewSummary">0 份待核查</span><button class="button button-primary button-sm" type="button" id="dashboardReviewAllButton" hidden><svg class="icon"><use href="#i-check"></use></svg>一键核查全部</button><button class="button button-secondary button-sm" type="button" id="dashboardUploadButton"><svg class="icon"><use href="#i-upload"></use></svg>继续上传</button></div>
+            </div>
+            <div class="dashboard-review-list" id="dashboardReviewList"></div>
+          </article>
+
+          <article class="panel task-panel">
+            <div class="panel-head">
+              <div><h2 id="dashboardTaskTitle">文档包任务</h2><p id="dashboardTaskHint">跟踪岗位告知、制度预案、检查通知等文档的生成状态</p></div>
+              <button class="button button-quiet" type="button" data-go="generate">全部任务<svg class="icon"><use href="#i-arrow"></use></svg></button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>文档包 / 文档</th><th>适用范围</th><th>依赖条件</th><th>状态</th><th>更新时间</th><th></th></tr></thead>
+                <tbody id="dashboardTaskBody">
+                  <tr>
+                    <td><div class="doc-cell"><span class="file-icon blue">W</span><div><strong>职业病危害因素告知书</strong><small>DOCX · 模板 v2.3</small></div></div></td>
+                    <td>24 个岗位</td><td><span class="dependency ok"><svg class="icon tiny"><use href="#i-check"></use></svg>岗位映射完整</span></td>
+                    <td><span class="status-badge ready">可生成</span></td><td>11-14 09:32</td>
+                    <td><button class="row-action" type="button" data-go="generate">处理</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="doc-cell"><span class="file-icon indigo">P</span><div><strong>职业病危害事故应急预案</strong><small>DOCX · 模板 v1.8</small></div></div></td>
+                    <td>全公司</td><td><span class="dependency ok"><svg class="icon tiny"><use href="#i-check"></use></svg>基础资料完整</span></td>
+                    <td><span class="status-badge ready">可生成</span></td><td>11-14 09:18</td>
+                    <td><button class="row-action" type="button" data-go="generate">处理</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="doc-cell"><span class="file-icon amber">R</span><div><strong>职业健康检查通知书</strong><small>DOCX · 模板 v2.1</small></div></div></td>
+                    <td>186 名接害人员</td><td><span class="dependency warn"><svg class="icon tiny"><use href="#i-alert"></use></svg>员工名册缺失</span></td>
+                    <td><span class="status-badge blocked">已阻断</span></td><td>11-13 17:45</td>
+                    <td><button class="row-action" type="button" data-go="enterprise">补充资料</button></td>
+                  </tr>
+                  <tr>
+                    <td><div class="doc-cell"><span class="file-icon green">A</span><div><strong>年度职业病危害评估报告</strong><small>DOCX · 模板 v3.0</small></div></div></td>
+                    <td>2026 年度</td><td><span class="dependency warn"><svg class="icon tiny"><use href="#i-alert"></use></svg>缺少检测报告</span></td>
+                    <td><span class="status-badge pending">待补充</span></td><td>11-13 15:20</td>
+                    <td><button class="row-action" type="button" data-go="library">上传资料</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="view" id="view-enterprise" data-title="企业档案">
+          <div class="page-heading">
+            <div><p class="eyebrow">企业主数据 · 文档生成的起点</p><h1>企业档案</h1><p>维护企业、岗位、危害因素与人员关联，为规则匹配提供可信输入。</p></div>
+            <div class="heading-actions"><button class="button button-secondary" id="editCompanyProfile" type="button"><svg class="icon"><use href="#i-building"></use></svg>编辑企业资料</button><button class="button button-secondary" id="generateSupplementalMaterial" type="button"><svg class="icon"><use href="#i-doc-plus"></use></svg>生成补充资料</button><button class="button button-primary" id="openEnterpriseImport" type="button"><svg class="icon"><use href="#i-upload"></use></svg>导入企业资料</button></div>
+          </div>
+
+          <div class="demo-notice" id="enterpriseDemoNotice"><span>DEMO</span><p>当前展示为虚构示例企业，用于本地原型预览，不代表真实客户数据。</p></div>
+
+          <div class="import-onboarding-banner" id="enterpriseImportBanner" hidden>
+            <span class="import-onboarding-icon"><svg class="icon"><use href="#i-upload"></use></svg></span>
+            <div class="import-onboarding-copy">
+              <strong id="enterpriseImportBannerTitle">新企业空间已创建</strong>
+              <p id="enterpriseImportBannerText">上传营业执照、企业信息表、岗位与员工资料后，系统会自动识别并补充企业档案。</p>
+              <div class="import-code-line"><span>企业协同码</span><code id="newCompanyCode">QY-XXXX-26</code><button id="copyNewCompanyCode" type="button">复制</button></div>
+            </div>
+            <div class="import-onboarding-actions">
+              <button class="button button-primary button-sm" id="bannerImportButton" type="button"><svg class="icon"><use href="#i-upload"></use></svg>上传资料</button>
+              <button class="button button-secondary button-sm" id="bannerReviewButton" type="button" hidden>去工作台核查</button>
+              <button class="text-link" id="dismissImportBanner" type="button">稍后补充</button>
+            </div>
+          </div>
+
+          <div class="enterprise-layout">
+            <article class="panel company-card">
+              <div class="company-head">
+                <div class="company-logo" id="currentCompanyLogo">华</div>
+                <div class="company-title"><div><h2 id="currentCompanyTitle">华东精密制造有限公司</h2><span class="status-badge verified" id="currentCompanyStatus"><svg class="icon tiny"><use href="#i-check"></use></svg>档案已核验</span></div><p id="currentCompanyCredit">统一社会信用代码：9132**********8X（示例）</p></div>
+                <button class="icon-button" type="button" data-toast="演示：企业档案更多操作"><svg class="icon"><use href="#i-more"></use></svg></button>
+              </div>
+              <div class="profile-completeness">
+                <div><span>档案完整度</span><strong id="profileCompletenessValue">88%</strong><p id="profileCompletenessHint">还缺 2 项关键字段：职业健康管理机构、专职管理人员</p></div>
+                <div class="progress-track"><span id="profileCompletenessBar" style="width:88%"></span></div>
+              </div>
+              <div class="info-grid">
+                <div><span>所属行业</span><strong id="enterpriseIndustry">金属制品制造</strong></div>
+                <div><span>企业规模</span><strong id="enterpriseScale">中型 · 386 人</strong></div>
+                <div><span>接害人员</span><strong id="enterpriseExposed">186 人</strong></div>
+                <div><span>生产场所</span><strong id="enterpriseLocations">2 个厂区 · 5 个车间</strong></div>
+                <div><span>建档年度</span><strong id="enterpriseYear">2026 年</strong></div>
+                <div><span>最近更新</span><strong id="enterpriseUpdated">2026-11-14 09:20</strong></div>
+              </div>
+              <div class="enterprise-mapping-warnings" id="enterpriseMappingWarnings" hidden></div>
+            </article>
+
+            <div class="object-stats">
+              <article class="object-stat"><span class="object-icon blue"><svg class="icon"><use href="#i-building"></use></svg></span><div><strong id="positionStatValue">24</strong><span>岗位</span></div><small id="positionStatHint">6 个岗位待绑定危害</small></article>
+              <article class="object-stat"><span class="object-icon amber"><svg class="icon"><use href="#i-alert"></use></svg></span><div><strong id="pointStatValue">32</strong><span>检测点位</span></div><small id="pointStatHint">2 个点位报告过期</small></article>
+              <article class="object-stat"><span class="object-icon indigo"><svg class="icon"><use href="#i-people"></use></svg></span><div><strong id="employeeStatValue">186</strong><span>接害人员</span></div><small id="employeeStatHint">员工名册尚未导入</small></article>
+              <article class="object-stat"><span class="object-icon green"><svg class="icon"><use href="#i-folder"></use></svg></span><div><strong id="systemStatValue">16</strong><span>管理制度</span></div><small id="systemStatHint">3 份待年度复审</small></article>
+            </div>
+          </div>
+
+          <article class="panel">
+            <div class="panel-head">
+              <div><h2>岗位 — 危害因素映射</h2><p>该矩阵决定告知书、监护档案、检查项目与防护用品规则</p></div>
+              <div class="panel-actions"><span class="soft-badge" id="positionMapBadge">24 个岗位</span><button class="button button-secondary button-sm" type="button" data-toast="演示：打开岗位与危害因素映射编辑器">编辑映射</button></div>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table hazard-table">
+                <thead><tr><th>岗位 / 部门</th><th>主要危害因素</th><th>风险等级</th><th>关联人数</th><th>规则完整度</th><th>需生成文档</th><th></th></tr></thead>
+                <tbody id="positionTableBody">
+                  <tr><td><div class="position-cell"><span class="dept-dot blue"></span><div><strong>冲压操作工</strong><small>冲压车间</small></div></div></td><td><div class="tag-list"><span>噪声</span><span>手传振动</span></div></td><td><span class="risk-tag high">高风险</span></td><td>42</td><td><div class="cell-progress"><span><i style="width:100%"></i></span><b>100%</b></div></td><td>4 份</td><td><button class="icon-button tiny-button" type="button" data-toast="演示：查看冲压操作工规则详情"><svg class="icon"><use href="#i-more"></use></svg></button></td></tr>
+                  <tr><td><div class="position-cell"><span class="dept-dot amber"></span><div><strong>焊接工</strong><small>焊接车间</small></div></div></td><td><div class="tag-list"><span>电焊烟尘</span><span>锰及其化合物</span><span>紫外线</span></div></td><td><span class="risk-tag high">高风险</span></td><td>36</td><td><div class="cell-progress"><span><i style="width:100%"></i></span><b>100%</b></div></td><td>5 份</td><td><button class="icon-button tiny-button" type="button" data-toast="演示：查看焊接工规则详情"><svg class="icon"><use href="#i-more"></use></svg></button></td></tr>
+                  <tr><td><div class="position-cell"><span class="dept-dot red"></span><div><strong>喷涂工</strong><small>表面处理车间</small></div></div></td><td><div class="tag-list"><span>苯系物</span><span>粉尘</span></div></td><td><span class="risk-tag high">高风险</span></td><td>18</td><td><div class="cell-progress"><span><i style="width:67%"></i></span><b>67%</b></div></td><td>6 份</td><td><button class="icon-button tiny-button" type="button" data-toast="演示：喷涂工缺少 2 项检测数据"><svg class="icon"><use href="#i-more"></use></svg></button></td></tr>
+                  <tr><td><div class="position-cell"><span class="dept-dot green"></span><div><strong>打磨工</strong><small>精加工车间</small></div></div></td><td><div class="tag-list"><span>噪声</span><span>砂轮磨尘</span></div></td><td><span class="risk-tag mid">中风险</span></td><td>31</td><td><div class="cell-progress"><span><i style="width:100%"></i></span><b>100%</b></div></td><td>4 份</td><td><button class="icon-button tiny-button" type="button" data-toast="演示：查看打磨工规则详情"><svg class="icon"><use href="#i-more"></use></svg></button></td></tr>
+                  <tr><td><div class="position-cell"><span class="dept-dot slate"></span><div><strong>质检员</strong><small>质量部</small></div></div></td><td><div class="tag-list"><span>噪声</span></div></td><td><span class="risk-tag low">低风险</span></td><td>12</td><td><div class="cell-progress"><span><i style="width:50%"></i></span><b>50%</b></div></td><td>2 份</td><td><button class="icon-button tiny-button" type="button" data-toast="演示：质检员危害因素待复核"><svg class="icon"><use href="#i-more"></use></svg></button></td></tr>
+                  <tr><td><div class="position-cell"><span class="dept-dot violet"></span><div><strong>设备维修工</strong><small>设备部</small></div></div></td><td><div class="tag-list"><span>噪声</span><span>电焊烟尘</span></div></td><td><span class="risk-tag mid">中风险</span></td><td>14</td><td><div class="cell-progress"><span><i style="width:75%"></i></span><b>75%</b></div></td><td>4 份</td><td><button class="icon-button tiny-button" type="button" data-toast="演示：设备维修工缺少防护用品记录"><svg class="icon"><use href="#i-more"></use></svg></button></td></tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="detection-point-summary" id="detectionPointList" hidden></div>
+          </article>
+
+          <div class="enterprise-bottom">
+            <article class="panel employee-panel">
+              <div class="panel-head">
+                <div><h2>人员关联</h2><p>员工名册是监护档案、检查通知与结果汇总的前置条件</p></div>
+                <button class="button button-primary button-sm" type="button" id="employeeImportButton"><svg class="icon"><use href="#i-upload"></use></svg>导入员工名册</button>
+              </div>
+              <div class="import-state">
+                <div class="import-visual"><div class="person-outline"><svg class="icon"><use href="#i-people"></use></svg></div><span class="zero" id="employeeImportVisualCount">0</span></div>
+                <div class="import-copy"><strong id="employeeImportTitle">尚未导入员工名册</strong><p id="employeeImportCopy">需至少包含姓名、部门、岗位、接害因素、入职时间和体检状态 6 个字段。</p><div class="field-checks" id="employeeFieldChecks"><span class="missing">需至少包含 6 个字段，导入后再进行映射</span></div></div>
+                <div class="import-impact" id="employeeImportImpact"><span>资料状态</span><strong id="employeeImpactCount">待上传</strong><small id="employeeImpactHint">上传后识别影响范围</small></div>
+              </div>
+              <div class="mapped-employee-list" id="employeeMappingList" hidden></div>
+            </article>
+            <article class="panel completeness-panel">
+              <div class="panel-head compact"><div><h2>建档检查</h2><p>优先处理会影响签发的事项</p></div><span class="status-badge pending" id="enterpriseCheckBadge">待完善</span></div>
+              <div class="check-list" id="enterpriseCheckList">
+                <div><span class="check-icon bad">!</span><p><strong>检测报告缺失</strong><small>喷涂车间 2026 年季度检测</small></p><button class="text-link" type="button" data-go="library">去补充</button></div>
+                <div><span class="check-icon bad">!</span><p><strong>管理机构未填写</strong><small>影响制度类文档落款</small></p><button class="text-link" type="button" data-toast="演示：打开企业基本信息编辑">去完善</button></div>
+                <div><span class="check-icon ok"><svg class="icon tiny"><use href="#i-check"></use></svg></span><p><strong>营业执照已核验</strong><small>有效期至 2032-06-30</small></p><span class="complete-text">已完成</span></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="view-library" data-title="资料中心">
+          <div class="page-heading">
+            <div><p class="eyebrow">输入层 · 资料归集与校验</p><h1>资料中心</h1><p>把企业资料按标准结构归集，让每一份文档都有可追溯的依据。</p></div>
+            <div class="heading-actions"><button class="button button-secondary" type="button" data-toast="演示：已下载资料批量导入模板"><svg class="icon"><use href="#i-download"></use></svg>下载导入模板</button><button class="button button-primary" id="libraryUploadButton" type="button"><svg class="icon"><use href="#i-upload"></use></svg>上传资料</button></div>
+          </div>
+
+          <div class="library-summary">
+            <div class="library-summary-copy"><span class="summary-icon"><svg class="icon"><use href="#i-folder"></use></svg></span><div><strong>43</strong><span>份资料已归集</span></div></div>
+            <div class="summary-divider"></div>
+            <div class="summary-metric"><span class="metric-dot complete"></span><strong>34</strong><span>校验通过</span></div>
+            <div class="summary-metric"><span class="metric-dot review"></span><strong>7</strong><span>待补充</span></div>
+            <div class="summary-metric"><span class="metric-dot missing"></span><strong>2</strong><span>校验异常</span></div>
+            <div class="summary-action"><span>本年度目标 56 份</span><div class="summary-progress"><i style="width:77%"></i></div><b>77%</b></div>
+          </div>
+
+          <div class="category-grid">
+            <article class="category-card">
+              <div class="category-top"><span class="category-icon blue"><svg class="icon"><use href="#i-building"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看企业资质与制度资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
+              <h3>企业资质与制度</h3><p>营业执照、制度、预案、组织架构</p>
+              <div class="category-count"><strong>14</strong><span>/ 16 份</span><b class="health good">完整度 88%</b></div>
+              <div class="progress-track"><span style="width:88%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>12 已校验</span><span class="warning-text">2 待补充</span></div>
+            </article>
+            <article class="category-card">
+              <div class="category-top"><span class="category-icon indigo"><svg class="icon"><use href="#i-shield"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看岗位与防护资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
+              <h3>岗位与防护</h3><p>岗位说明、危害因素、检测报告、防护用品</p>
+              <div class="category-count"><strong>11</strong><span>/ 15 份</span><b class="health mid">完整度 73%</b></div>
+              <div class="progress-track amber"><span style="width:73%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>8 已校验</span><span class="warning-text">4 待补充</span></div>
+            </article>
+            <article class="category-card">
+              <div class="category-top"><span class="category-icon amber"><svg class="icon"><use href="#i-people"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看员工档案资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
+              <h3>员工与监护档案</h3><p>员工名册、体检结果、告知签收、复查记录</p>
+              <div class="category-count"><strong>6</strong><span>/ 18 份</span><b class="health low">完整度 33%</b></div>
+              <div class="progress-track red"><span style="width:33%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>5 已校验</span><span class="danger-text">关键缺口</span></div>
+            </article>
+            <article class="category-card">
+              <div class="category-top"><span class="category-icon green"><svg class="icon"><use href="#i-doc-plus"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看科普与服务资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
+              <h3>科普与服务</h3><p>培训记录、宣传材料、服务记录</p>
+              <div class="category-count"><strong>12</strong><span>/ 12 份</span><b class="health good">完整度 100%</b></div>
+              <div class="progress-track green"><span style="width:100%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>12 已校验</span><span class="complete-text">已完成</span></div>
+            </article>
+          </div>
+
+          <div class="library-layout">
+            <article class="panel">
+              <div class="panel-head">
+                <div><h2>最近资料</h2><p>按最近上传与校验状态排列</p></div>
+                <button class="button button-quiet" type="button" data-toast="演示：展开全部 43 份资料">查看全部<svg class="icon"><use href="#i-arrow"></use></svg></button>
+              </div>
+              <div class="table-wrap">
+                <table class="data-table file-table">
+                  <thead><tr><th>资料名称</th><th>分类</th><th>文件信息</th><th>校验状态</th><th>更新时间</th><th></th></tr></thead>
+                  <tbody>
+                    <tr><td><div class="doc-cell"><span class="file-icon red">P</span><div><strong>喷涂车间职业病危害检测报告.pdf</strong><small>来源：企业上传</small></div></div></td><td>岗位与防护</td><td>4.8 MB · 12 页</td><td><span class="status-badge verified"><svg class="icon tiny"><use href="#i-check"></use></svg>已校验</span></td><td>11-14 08:46</td><td><button class="icon-button tiny-button" type="button" data-doc="喷涂车间职业病危害检测报告"><svg class="icon"><use href="#i-eye"></use></svg></button></td></tr>
+                    <tr><td><div class="doc-cell"><span class="file-icon blue">X</span><div><strong>2026年职业健康管理制度汇编.docx</strong><small>版本：V3.2</small></div></div></td><td>企业资质与制度</td><td>1.2 MB · 38 页</td><td><span class="status-badge verified"><svg class="icon tiny"><use href="#i-check"></use></svg>已校验</span></td><td>11-13 17:22</td><td><button class="icon-button tiny-button" type="button" data-doc="2026年职业健康管理制度汇编"><svg class="icon"><use href="#i-eye"></use></svg></button></td></tr>
+                    <tr><td><div class="doc-cell"><span class="file-icon amber">X</span><div><strong>劳动防护用品发放记录.xlsx</strong><small>字段映射待确认</small></div></div></td><td>岗位与防护</td><td>286 KB · 1 表</td><td><span class="status-badge pending">待补充</span></td><td>11-13 16:10</td><td><button class="icon-button tiny-button" type="button" data-doc="劳动防护用品发放记录"><svg class="icon"><use href="#i-eye"></use></svg></button></td></tr>
+                    <tr><td><div class="doc-cell"><span class="file-icon green">X</span><div><strong>职业健康培训签到表.xlsx</strong><small>共 4 场 · 216 人次</small></div></div></td><td>科普与服务</td><td>152 KB · 4 表</td><td><span class="status-badge verified"><svg class="icon tiny"><use href="#i-check"></use></svg>已校验</span></td><td>11-13 14:08</td><td><button class="icon-button tiny-button" type="button" data-doc="职业健康培训签到表"><svg class="icon"><use href="#i-eye"></use></svg></button></td></tr>
+                    <tr><td><div class="doc-cell"><span class="file-icon indigo">X</span><div><strong>应急预案演练记录.docx</strong><small>缺少签批页</small></div></div></td><td>企业资质与制度</td><td>3.1 MB · 9 页</td><td><span class="status-badge blocked">异常</span></td><td>11-12 11:35</td><td><button class="icon-button tiny-button" type="button" data-doc="应急预案演练记录"><svg class="icon"><use href="#i-eye"></use></svg></button></td></tr>
+                  </tbody>
+                </table>
+              </div>
+            </article>
+
+            <aside class="validation-panel">
+              <div class="panel-head compact"><div><h2>导入校验</h2><p>系统发现的字段与内容问题</p></div><span class="count-badge">7</span></div>
+              <div class="validation-list">
+                <button class="validation-item" type="button" data-toast="演示：需补充喷涂车间检测报告的检测日期与检测机构"><span class="validation-kind red">必填</span><strong>检测报告缺少检测机构</strong><small>喷涂车间检测报告 · 2 个字段</small></button>
+                <button class="validation-item" type="button" data-toast="演示：员工名册字段未映射"><span class="validation-kind amber">映射</span><strong>员工名册“岗位”字段未映射</strong><small>标准字段：岗位名称 / 岗位编码</small></button>
+                <button class="validation-item" type="button" data-toast="演示：预案审批页签名缺失"><span class="validation-kind red">有效性</span><strong>应急预案缺少审批签名</strong><small>文件需重新上传签批版</small></button>
+                <button class="validation-item" type="button" data-toast="演示：培训记录日期超出年度范围"><span class="validation-kind amber">一致性</span><strong>培训记录日期不在本年度</strong><small>共发现 3 条异常记录</small></button>
+              </div>
+              <button class="button button-secondary button-full" type="button" data-toast="演示：已重新发起全部资料校验">重新校验全部</button>
+            </aside>
+          </div>
+
+          <article class="panel generated-docs-panel" id="generatedDocsPanel">
+            <div class="panel-head">
+              <div><h2>生成文档管理</h2><p>查看、修改、保存版本或下载当前企业已生成的受控文档</p></div>
+              <span class="soft-badge" id="generatedDocsCount">0 份</span>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table">
+                <thead><tr><th>文档名称 / 编号</th><th>适用范围</th><th>来源依据</th><th>版本</th><th>更新时间</th><th>操作</th></tr></thead>
+                <tbody id="generatedDocsTableBody"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
+        <section class="view" id="view-generate" data-title="文档生成">
+          <div class="page-heading">
+            <div><p class="eyebrow">规则驱动 · 模板化输出</p><h1>文档生成</h1><p>选择文档包与生成范围，系统根据档案、资料和规则矩阵校验生成条件。</p></div>
+            <div class="heading-actions"><button class="button button-secondary" type="button" data-toast="演示：已打开模板管理"><svg class="icon"><use href="#i-folder"></use></svg>模板管理</button></div>
+          </div>
+
+          <article class="panel config-panel">
+            <div class="config-heading"><span class="config-number">01</span><div><h2>生成配置</h2><p>配置将应用于本次选中的全部文档</p></div></div>
+            <div class="config-grid">
+              <label class="form-field"><span>企业</span><select id="generateCompanySelect"><option>华东精密制造（示例）</option><option>无其他企业</option></select></label>
+              <label class="form-field"><span>年度</span><select><option>2026 年度</option><option>2025 年度</option></select></label>
+              <label class="form-field"><span>文档包</span><select><option>年度职业健康管理资料包</option><option>专项检查资料包</option></select></label>
+              <label class="form-field"><span>模板集</span><select><option>职业健康模板集 v2.3</option><option>职业健康模板集 v2.2</option></select></label>
+            </div>
+            <div class="config-meta"><span><svg class="icon tiny"><use href="#i-check"></use></svg>规则版本：2026-11-10</span><span><svg class="icon tiny"><use href="#i-clock"></use></svg>预计生成耗时 2–4 分钟</span><span><svg class="icon tiny"><use href="#i-shield"></use></svg>生成过程不会修改原始资料</span></div>
+          </article>
+
+          <article class="panel generation-panel">
+            <div class="panel-head">
+              <div><h2>可生成文档</h2><p>已根据当前企业档案完成初步条件检查</p></div>
+              <div class="generation-summary"><span class="summary-chip ready" id="generationReadySummary">4 份可生成</span><span class="summary-chip blocked" id="generationBlockedSummary">2 份已阻断</span></div>
+            </div>
+            <div class="selection-toolbar">
+              <label class="checkbox-label"><input type="checkbox" id="selectAllDocs"><span class="custom-check"></span>全选可生成文档</label>
+              <span id="selectionCount">已选择 0 份</span>
+              <button class="text-link" type="button" id="clearSelection">清除选择</button>
+              <span class="toolbar-spacer"></span>
+              <button class="button button-secondary button-sm" type="button" id="validateDocs"><svg class="icon"><use href="#i-shield"></use></svg>开始校验</button>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table generation-table">
+                <thead><tr><th class="check-column"></th><th>文档名称</th><th>适用对象</th><th>模板 / 版本</th><th>生成条件</th><th>状态</th></tr></thead>
+                <tbody id="generationTableBody"></tbody>
+              </table>
+            </div>
+            <div class="generation-footer">
+              <div class="footer-selection"><span class="selection-ring"><strong id="footerCount">0</strong>/<span id="footerTotal">6</span></span><div><strong>准备生成 <span id="footerSelectedLabel">0 份</span></strong><small>校验通过后将创建文档草稿</small></div></div>
+              <div class="footer-actions"><button class="button button-secondary" type="button" data-go="library">补充资料</button><button class="button button-primary" type="button" id="generateDocs" disabled>生成所选文档<svg class="icon"><use href="#i-arrow"></use></svg></button></div>
+            </div>
+            <div class="generation-progress" id="generationProgress" hidden><div><span>正在生成文档...</span><strong id="generationProgressText">0%</strong></div><div class="linear-progress"><span id="generationProgressBar" style="width:0%"></span></div><p id="generationProgressNote">正在加载模板与字段映射</p></div>
+          </article>
+
+          <div class="blocked-notice"><span class="blocked-notice-icon"><svg class="icon"><use href="#i-alert"></use></svg></span><div><strong id="generationBlockedTitle">文档生成条件</strong><p id="generationBlockedText">员工监护档案依赖员工名册与体检结果，年度评估报告依赖完整检测汇总。系统不会使用缺失数据生成占位内容，避免产生无法签发或责任不清的文档。</p></div><button class="text-link" type="button" data-go="gaps">查看规则说明<svg class="icon tiny"><use href="#i-arrow"></use></svg></button></div>
+        </section>
+
+        <section class="view" id="view-archive" data-title="档案库">
+          <div class="page-heading">
+            <div><p class="eyebrow">受控文档 · 版本与留存</p><h1>档案库</h1><p>每个企业拥有独立档案库，仅展示当前企业生成、审核与归档的受控文档。</p></div>
+            <div class="heading-actions"><button class="button button-secondary" type="button" data-toast="演示：打开档案移交清单"><svg class="icon"><use href="#i-refresh"></use></svg>档案移交</button><button class="button button-primary" type="button" data-toast="演示：已导出档案目录"><svg class="icon"><use href="#i-download"></use></svg>导出目录</button></div>
+          </div>
+
+          <div class="scope-banner archive-scope-banner">
+            <div class="scope-banner-icon"><svg class="icon"><use href="#i-shield"></use></svg></div>
+            <div><strong id="archiveScopeName">当前企业独立档案库</strong><span id="archiveScopeMeta">档案数据按企业隔离，其他企业不可见。</span></div>
+            <div class="archive-isolation-badge"><svg class="icon tiny"><use href="#i-check"></use></svg>企业级数据隔离</div>
+          </div>
+
+          <div class="archive-stats">
+            <article><span class="archive-stat-icon blue"><svg class="icon"><use href="#i-archive"></use></svg></span><div><strong id="archiveStatTotal">0</strong><span>档案总数</span></div><small id="archiveStatTotalHint">当前企业暂无档案</small></article>
+            <article><span class="archive-stat-icon green"><svg class="icon"><use href="#i-check"></use></svg></span><div><strong id="archiveStatSigned">0</strong><span>已签发</span></div><small id="archiveStatSignedHint">暂无已签发文档</small></article>
+            <article><span class="archive-stat-icon amber"><svg class="icon"><use href="#i-clock"></use></svg></span><div><strong id="archiveStatPending">0</strong><span>待审核 / 签发</span></div><small id="archiveStatPendingHint">暂无待审核文档</small></article>
+            <article><span class="archive-stat-icon red"><svg class="icon"><use href="#i-alert"></use></svg></span><div><strong id="archiveStatExpiring">0</strong><span>即将到期</span></div><small id="archiveStatExpiringHint">未接入到期规则</small></article>
+          </div>
+
+          <article class="panel archive-panel">
+            <div class="archive-toolbar">
+              <div class="status-tabs" role="tablist">
+                <button class="active" type="button" data-status="all">全部 <span>0</span></button>
+                <button type="button" data-status="draft">草稿 <span>0</span></button>
+                <button type="button" data-status="review">待审核 <span>0</span></button>
+                <button type="button" data-status="signed">已签发 <span>0</span></button>
+                <button type="button" data-status="archived">已归档 <span>0</span></button>
+              </div>
+              <label class="table-search"><svg class="icon"><use href="#i-search"></use></svg><input id="archiveSearch" type="search" placeholder="搜索文档、人员、岗位或资料"></label>
+            </div>
+            <div class="table-wrap">
+              <table class="data-table archive-table">
+                <thead><tr><th>文档编号 / 名称</th><th>版本</th><th>状态</th><th>签发人</th><th>签发日期</th><th>保管期限</th><th></th></tr></thead>
+                <tbody id="archiveTableBody"></tbody>
+              </table>
+            </div>
+            <div class="table-pagination"><span id="archivePaginationLabel">当前企业暂无文档档案</span><div id="archivePager"><button type="button" disabled>上一页</button><button class="active" type="button" disabled>1</button><button type="button" disabled>下一页</button></div></div>
+          </article>
+
+          <div class="archive-entity-grid">
+            <article class="panel">
+              <div class="panel-head"><div><h2>人员档案</h2><p>按当前企业人员名册自动映射</p></div><span class="soft-badge" id="archivePeopleCount">0 人</span></div>
+              <div class="table-wrap"><table class="data-table"><thead><tr><th>人员</th><th>部门</th><th>岗位</th><th>危害因素</th><th>体检类别</th></tr></thead><tbody id="archivePeopleBody"></tbody></table></div>
+            </article>
+            <article class="panel">
+              <div class="panel-head"><div><h2>原始资料</h2><p>所有上传文件及其解析核查状态</p></div><span class="soft-badge" id="archiveSourceCount">0 份</span></div>
+              <div class="table-wrap"><table class="data-table"><thead><tr><th>资料名称</th><th>分类</th><th>解析摘要</th><th>状态</th><th></th></tr></thead><tbody id="archiveSourceBody"></tbody></table></div>
+            </article>
+          </div>
+
+          <div class="retention-callout">
+            <div class="retention-icon"><svg class="icon"><use href="#i-archive"></use></svg></div>
+            <div><strong>职业健康监护档案建议长期妥善保存</strong><p>档案库需支持受控访问、版本冻结、电子签名、保存到期提醒与企业移交；涉及员工个人健康信息的内容应按权限最小化展示。</p></div>
+            <span class="retention-badge">保存策略：30 年 / 永久</span>
+          </div>
+        </section>
+
+        <section class="view" id="view-gaps" data-title="功能缺口">
+          <div class="page-heading">
+            <div><p class="eyebrow">产品诊断 · 企业管理与文档生成</p><h1>功能缺口</h1><p>按当前资料与产品目标，补齐企业文档生产闭环所需的业务能力。</p></div>
+            <div class="heading-actions"><button class="button button-secondary" type="button" data-toast="演示：诊断报告已加入导出队列"><svg class="icon"><use href="#i-download"></use></svg>导出诊断</button><button class="button button-primary" type="button" data-toast="演示：已创建一期实施清单"><svg class="icon"><use href="#i-plus"></use></svg>生成实施清单</button></div>
+          </div>
+
+          <div class="diagnosis-banner">
+            <div class="diagnosis-title"><span class="diagnosis-mark">!</span><div><strong>结论：当前缺的不是智能体，而是完整的企业文档生产闭环。</strong><p>企业主数据、规则矩阵、参数化模板、生成工作台、审核签发与审计能力尚未形成可交付系统。</p></div></div>
+            <div class="diagnosis-score"><span>文档能力成熟度</span><strong>26<small>/100</small></strong><div><i style="width:26%"></i></div></div>
+          </div>
+
+          <div class="gaps-layout">
+            <article class="panel coverage-panel">
+              <div class="panel-head"><div><h2>能力覆盖度</h2><p>面向“企业管理 + 文档生成”的八项基础能力</p></div><span class="soft-badge">目标 ≥ 80%</span></div>
+              <div class="coverage-list">
+                <div class="coverage-item"><div><span>企业主数据</span><b>30%</b></div><div><i style="width:30%"></i><em></em></div><small>已有字段表，缺少可维护的数据模型与校验</small></div>
+                <div class="coverage-item"><div><span>资料归集</span><b>55%</b></div><div><i style="width:55%"></i><em></em></div><small>已有四类资料要求，缺少上传、解析、映射与版本管理</small></div>
+                <div class="coverage-item"><div><span>规则矩阵</span><b>20%</b></div><div><i style="width:20%"></i><em></em></div><small>岗位、危害、体检项目与文档之间尚未结构化</small></div>
+                <div class="coverage-item"><div><span>模板引擎</span><b>35%</b></div><div><i style="width:35%"></i><em></em></div><small>有文档样例，缺少字段占位符、条件段落与版本控制</small></div>
+                <div class="coverage-item"><div><span>生成工作台</span><b>25%</b></div><div><i style="width:25%"></i><em></em></div><small>缺少批量生成、任务进度、失败重试与结果追踪</small></div>
+                <div class="coverage-item"><div><span>审核签发</span><b>10%</b></div><div><i style="width:10%"></i><em></em></div><small>缺少状态机、审批意见、电子签名与签发留痕</small></div>
+                <div class="coverage-item"><div><span>归档追溯</span><b>15%</b></div><div><i style="width:15%"></i><em></em></div><small>缺少归档目录、版本冻结、移交与到期提醒</small></div>
+                <div class="coverage-item"><div><span>权限审计</span><b>5%</b></div><div><i style="width:5%"></i><em></em></div><small>个人健康信息、导出、下载与签批均需可审计</small></div>
+              </div>
+            </article>
+
+            <aside class="priority-summary">
+              <article class="priority-card p0-card"><div><span class="priority-icon">P0</span><strong>6 项</strong></div><p>一期必须完成，否则无法形成可交付的文档生成闭环。</p><span>建议投入：核心研发 6–8 周</span></article>
+              <article class="priority-card p1-card"><div><span class="priority-icon">P1</span><strong>3 项</strong></div><p>一期后补齐，提升导入效率、档案长期保存与运营可视性。</p><span>建议投入：迭代 2–3 周</span></article>
+              <div class="scope-lock"><svg class="icon"><use href="#i-shield"></use></svg><div><strong>本期范围锁定</strong><p>不纳入智能体、对话采集、微信/企微、预约、报告解读、AI 改写与智能推荐。</p></div></div>
+            </aside>
+          </div>
+
+          <article class="panel gap-list-panel">
+            <div class="panel-head">
+              <div><h2>缺口清单</h2><p>按交付优先级排列，可直接拆分为产品需求与研发任务</p></div>
+              <div class="filter-pills" id="gapFilters"><button class="active" type="button" data-priority="all">全部 9</button><button type="button" data-priority="p0">P0 6</button><button type="button" data-priority="p1">P1 3</button></div>
+            </div>
+            <div class="gap-list">
+              <article class="gap-item" data-priority="p0"><span class="gap-priority p0">P0</span><div class="gap-main"><div><h3>企业与员工主数据</h3><span class="gap-tag">基础模型</span></div><p>建立企业、厂区、部门、岗位、危害因素、接害人员、体检记录的统一对象与关联关系。</p><div class="acceptance"><strong>验收标准</strong><span>可新增/编辑企业，导入员工名册，并校验岗位与接害因素关联。</span></div></div><div class="gap-state"><span class="status-badge blocked">阻断项</span><small>影响 5 类文档</small></div></article>
+              <article class="gap-item" data-priority="p0"><span class="gap-priority p0">P0</span><div class="gap-main"><div><h3>岗位—危害—文档规则矩阵</h3><span class="gap-tag">规则中心</span></div><p>用结构化配置描述岗位危害因素、检查项目、告知内容、防护用品与应生成文档之间的关系。</p><div class="acceptance"><strong>验收标准</strong><span>规则可配置、可版本化，并能解释某份文档为何允许或被阻断。</span></div></div><div class="gap-state"><span class="status-badge blocked">阻断项</span><small>影响生成边界</small></div></article>
+              <article class="gap-item" data-priority="p0"><span class="gap-priority p0">P0</span><div class="gap-main"><div><h3>参数化模板与字段映射</h3><span class="gap-tag">模板引擎</span></div><p>将现有 DOCX 样例转换为可维护模板，支持字段占位、条件段落、表格循环与签批区。</p><div class="acceptance"><strong>验收标准</strong><span>模板字段可追溯，缺失字段会阻断生成而不是输出空白占位。</span></div></div><div class="gap-state"><span class="status-badge pending">未建设</span><small>依赖主数据</small></div></article>
+              <article class="gap-item" data-priority="p0"><span class="gap-priority p0">P0</span><div class="gap-main"><div><h3>文档生成任务编排</h3><span class="gap-tag">工作台</span></div><p>支持按年度/企业/岗位/人员范围选择文档，批量校验、生成、失败重试与结果追踪。</p><div class="acceptance"><strong>验收标准</strong><span>一次任务可生成多份文档，展示每份文档的成功、阻断与失败原因。</span></div></div><div class="gap-state"><span class="status-badge pending">原型中</span><small>需后端任务</small></div></article>
+              <article class="gap-item" data-priority="p0"><span class="gap-priority p0">P0</span><div class="gap-main"><div><h3>审核、签发与归档状态机</h3><span class="gap-tag">受控流程</span></div><p>固化草稿、待审核、已签发、已归档、已作废状态，并记录意见、签批人与时间。</p><div class="acceptance"><strong>验收标准</strong><span>任何状态变化可追溯；已签发文件不可无痕覆盖。</span></div></div><div class="gap-state"><span class="status-badge pending">未建设</span><small>影响合规交付</small></div></article>
+              <article class="gap-item" data-priority="p0"><span class="gap-priority p0">P0</span><div class="gap-main"><div><h3>权限、版本与审计日志</h3><span class="gap-tag">安全底座</span></div><p>按企业、角色、文档类型控制查看、下载、生成与签批权限，记录敏感操作。</p><div class="acceptance"><strong>验收标准</strong><span>个人健康信息最小化展示，导出与下载可追溯到人、时间与用途。</span></div></div><div class="gap-state"><span class="status-badge blocked">高风险</span><small>涉及个人信息</small></div></article>
+              <article class="gap-item" data-priority="p1"><span class="gap-priority p1">P1</span><div class="gap-main"><div><h3>批量导入与数据校验</h3><span class="gap-tag">效率能力</span></div><p>为 Excel 名册、检测数据和防护用品台账提供模板导入、字段映射、错误预览与修复。</p><div class="acceptance"><strong>验收标准</strong><span>导入前展示问题清单，支持修正后重试且不产生重复数据。</span></div></div><div class="gap-state"><span class="status-badge pending">迭代项</span><small>P1</small></div></article>
+              <article class="gap-item" data-priority="p1"><span class="gap-priority p1">P1</span><div class="gap-main"><div><h3>长期保存与档案移交</h3><span class="gap-tag">档案能力</span></div><p>配置保存期限、到期提醒、归档目录、冻结版本与企业移交清单。</p><div class="acceptance"><strong>验收标准</strong><span>可生成完整移交包，并校验文件清单、版本与签批完整性。</span></div></div><div class="gap-state"><span class="status-badge pending">迭代项</span><small>P1</small></div></article>
+              <article class="gap-item" data-priority="p1"><span class="gap-priority p1">P1</span><div class="gap-main"><div><h3>统计看板与合规提醒</h3><span class="gap-tag">运营能力</span></div><p>统计资料完整度、文档生成率、签发及时率、到期复审与高风险企业清单。</p><div class="acceptance"><strong>验收标准</strong><span>可按时查看企业/年度维度指标，并对逾期与缺失发出站内提醒。</span></div></div><div class="gap-state"><span class="status-badge pending">迭代项</span><small>P1</small></div></article>
+            </div>
+          </article>
+
+          <div class="excluded-panel">
+            <div class="excluded-head"><span class="excluded-icon"><svg class="icon"><use href="#i-x"></use></svg></span><div><h2>本期明确排除</h2><p>以下能力不是当前“企业管理与文档生成”项目的交付范围</p></div></div>
+            <div class="excluded-tags"><span>对话式资料采集</span><span>智能问答 / 智能体</span><span>微信 / 企业微信接入</span><span>体检预约</span><span>体检报告智能解读</span><span>AI 文案改写</span><span>智能推荐</span></div>
+          </div>
+        </section>
+      </main>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"><span class="toast-icon"><svg class="icon"><use href="#i-check"></use></svg></span><div><strong id="toastTitle">操作完成</strong><p id="toastMessage"></p></div><button type="button" id="toastClose" aria-label="关闭提示"><svg class="icon"><use href="#i-x"></use></svg></button></div>
+
+  <div class="modal-backdrop enterprise-import-backdrop" id="enterpriseImportModal" hidden>
+    <div class="modal enterprise-import-modal" role="dialog" aria-modal="true" aria-labelledby="enterpriseImportTitle">
+      <div class="modal-head enterprise-import-head">
+        <div><span class="eyebrow">ENTERPRISE DATA IMPORT</span><h2 id="enterpriseImportTitle">上传企业资料</h2><p>上传后由系统识别企业名称、信用代码、岗位、危害因素与人员信息。</p></div>
+        <button class="icon-button" id="enterpriseImportClose" type="button" aria-label="关闭"><svg class="icon"><use href="#i-x"></use></svg></button>
+      </div>
+      <div class="modal-body enterprise-import-body">
+        <div class="import-modal-tip"><svg class="icon"><use href="#i-shield"></use></svg><span>当前为本地离线预览，文件不会上传服务器。系统会在浏览器内提取 PDF 文字、Excel 表格与 Word 文本，仅保存解析摘要，不保存原始文件。</span></div>
+                <div class="upload-required-strip">
+          <div><strong>3 类必选 + 1 类可选</strong><span>不限制具体文件名，系统按文件名自动归类，也可在待识别列表中手动调整。</span></div>
+          <button class="button button-secondary button-sm" id="enterpriseGlobalUploadButton" type="button"><svg class="icon"><use href="#i-upload"></use></svg>批量选择文件</button>
+          <input id="enterpriseGlobalFileInput" type="file" multiple accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.json" hidden>
+        </div>
+        <div class="file-import-grid">
+          <label class="file-import-card required" data-import-category="company">
+            <input type="file" multiple accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.json">
+            <span class="file-import-icon blue"><svg class="icon"><use href="#i-building"></use></svg></span>
+            <div><span class="requirement-badge">必选</span><strong>企业主体资料</strong><p>企业信息表、营业执照等</p><small>点击选择文件</small></div>
+          </label>
+          <label class="file-import-card required" data-import-category="employees">
+            <input type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.docx,.txt,.json">
+            <span class="file-import-icon indigo"><svg class="icon"><use href="#i-people"></use></svg></span>
+            <div><span class="requirement-badge">必选</span><strong>员工与人员名册</strong><p>员工名册、监护汇总、体检名单</p><small>点击选择文件</small></div>
+          </label>
+          <label class="file-import-card required" data-import-category="positions">
+            <input type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.docx,.txt,.json">
+            <span class="file-import-icon amber"><svg class="icon"><use href="#i-alert"></use></svg></span>
+            <div><span class="requirement-badge">必选</span><strong>岗位与危害因素</strong><p>岗位清单、危害因素、检测报告</p><small>点击选择文件</small></div>
+          </label>
+          <label class="file-import-card optional" data-import-category="systems">
+            <input type="file" multiple accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.json">
+            <span class="file-import-icon green"><svg class="icon"><use href="#i-folder"></use></svg></span>
+            <div><span class="requirement-badge optional">可选</span><strong>制度与补充资料</strong><p>管理制度、证照、其他补充材料</p><small>点击选择文件</small></div>
+          </label>
+        </div>
+        <div class="enterprise-replacement-banner" id="enterpriseReplacementBanner" hidden>
+          <span><svg class="icon"><use href="#i-refresh"></use></svg></span>
+          <div><strong>正在替换资料</strong><p id="enterpriseReplacementName"></p></div>
+          <button class="text-link" id="cancelReplacement" type="button">取消替换</button>
+        </div>
+        <div class="enterprise-import-validation" id="enterpriseImportValidation"></div>
+        <div class="file-import-queue" id="enterpriseFileQueue" hidden>
+          <div class="file-import-queue-head"><strong>待识别文件</strong><span id="enterpriseFileCount">0 份</span></div>
+          <div id="enterpriseFileList"></div>
+        </div>
+        <div class="import-recognition-flow">
+          <span><i>1</i>上传文件</span><b></b><span><i>2</i>自动识别</span><b></b><span><i>3</i>核对并更新档案</span>
+        </div>
+      </div>
+      <div class="modal-footer enterprise-import-footer">
+        <span id="enterpriseImportSummary">尚未选择文件</span>
+        <div><button class="button button-secondary" id="enterpriseImportCancel" type="button">稍后补充</button><button class="button button-primary" id="enterpriseImportSubmit" type="button" disabled><svg class="icon"><use href="#i-refresh"></use></svg>开始识别并更新档案</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="companyEditModal" hidden>
+    <form class="modal company-edit-modal" id="companyEditForm" role="dialog" aria-modal="true" aria-labelledby="companyEditTitle">
+      <div class="modal-head"><div><span class="eyebrow">企业主数据维护</span><h2 id="companyEditTitle">编辑企业资料</h2><p>修改后的字段会保存为本企业的人工核定值，并用于后续文档生成。</p></div><button class="icon-button" id="companyEditClose" type="button" aria-label="关闭"><svg class="icon"><use href="#i-x"></use></svg></button></div>
+      <div class="modal-body">
+        <div class="company-edit-grid">
+          <label class="form-field edit-span-2"><span>企业名称 *</span><input id="editCompanyName" name="companyName" type="text" required></label>
+          <label class="form-field"><span>统一社会信用代码</span><input id="editCompanyCredit" name="creditCode" type="text"></label>
+          <label class="form-field"><span>所属行业</span><input id="editCompanyIndustry" name="industry" type="text"></label>
+          <label class="form-field"><span>企业规模</span><select id="editCompanyScale" name="scale"><option value="">待识别</option><option value="大型">大型</option><option value="中型">中型</option><option value="小型">小型</option><option value="微型">微型</option></select></label>
+          <label class="form-field"><span>年度</span><input id="editCompanyYear" name="year" type="text" inputmode="numeric" placeholder="如 2026"></label>
+          <label class="form-field edit-span-2"><span>注册 / 通讯地址</span><input id="editCompanyAddress" name="address" type="text"></label>
+          <label class="form-field"><span>职工总人数</span><input id="editCompanyEmployeeCount" name="employeeCount" type="number" min="0"></label>
+          <label class="form-field"><span>接触危害人数</span><input id="editCompanyExposedCount" name="exposedCount" type="number" min="0"></label>
+          <label class="form-field"><span>法定代表人</span><input id="editCompanyLegal" name="legalRepresentative" type="text"></label>
+          <label class="form-field"><span>职业健康联系人</span><input id="editCompanyContact" name="contactName" type="text"></label>
+          <label class="form-field edit-span-2"><span>联系电话</span><input id="editCompanyPhone" name="phone" type="tel"></label>
+        </div>
+        <div class="company-edit-note"><svg class="icon"><use href="#i-shield"></use></svg><span>自动解析原文仍保留在原始资料中。企业名称等来源差异会继续显示为核查警告，人工修改不会覆盖来源追溯。</span></div>
+      </div>
+      <div class="modal-footer"><span>保存后自动刷新企业档案、人员、岗位与可生成文档。</span><div><button class="button button-secondary" id="companyEditCancel" type="button">取消</button><button class="button button-primary" id="companyEditSave" type="submit"><svg class="icon"><use href="#i-check"></use></svg>保存企业资料</button></div></div>
+    </form>
+  </div>
+
+  <div class="modal-backdrop" id="docModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-head"><div><span class="eyebrow">文档预览</span><h2 id="modalTitle">文档详情</h2></div><button class="icon-button" id="modalClose" type="button" aria-label="关闭"><svg class="icon"><use href="#i-x"></use></svg></button></div>
+      <div class="modal-body">
+        <div class="modal-file-head"><span class="file-icon blue" id="modalFileIcon">D</span><div><strong id="modalDocName">文档名称</strong><p id="modalDocMeta">文件信息</p></div><span class="status-badge signed" id="modalDocStatus">示例</span></div>
+        <div id="modalPreviewBody" class="parsed-preview"></div>
+      </div>
+      <div class="modal-footer modal-footer-rich">
+        <span id="modalFooterNote">版本信息与操作痕迹将在正式系统中记录</span>
+        <div class="modal-action-group">
+          <button class="button button-secondary" type="button" id="modalReplaceFile" hidden><svg class="icon"><use href="#i-upload"></use></svg>替换文件</button>
+          <button class="button button-secondary" type="button" id="modalImportOcr" hidden><svg class="icon"><use href="#i-refresh"></use></svg>导入 OCR</button>
+          <button class="button button-secondary" type="button" id="modalEditDocument" hidden><svg class="icon"><use href="#i-doc-plus"></use></svg>编辑正文</button>
+          <button class="button button-primary" type="button" id="modalSaveVersion" hidden><svg class="icon"><use href="#i-check"></use></svg>保存新版本</button>
+          <button class="button button-secondary" type="button" id="modalDownload" hidden><svg class="icon"><use href="#i-download"></use></svg><span>下载文件</span></button>
+          <button class="button button-primary" type="button" id="modalConfirmReview" hidden><svg class="icon"><use href="#i-check"></use></svg>确认已核查</button>
+          <button class="button button-secondary" type="button" id="modalCancel">关闭</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <input id="ocrTextFileInput" type="file" accept=".txt,.json" hidden>
+  <input id="modalReplaceFileInput" type="file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.json" hidden>
+
+  <div class="login-screen" id="loginScreen">
+    <section class="login-brand-panel">
+      <div class="login-brand-top">
+        <div class="login-brand">
+          <div class="brand-mark"><span></span><span></span><span></span></div>
+          <div><strong>职安文档云</strong><small>ENTERPRISE DOCS</small></div>
+        </div>
+        <span class="login-environment"><i></i>本地演示环境</span>
+      </div>
+      <div class="login-brand-copy">
+        <span class="login-kicker">企业职业健康文档管理平台</span>
+        <h1>让每一份职业健康文档<br><em>有依据、可审核、可追溯</em></h1>
+        <p>覆盖企业建档、资料归集、规则匹配、模板生成、审核签发与归档追溯，聚焦文档生产闭环，不包含智能体能力。</p>
+        <div class="login-feature-list">
+          <span><svg class="icon"><use href="#i-check"></use></svg>企业主数据与岗位危害映射</span>
+          <span><svg class="icon"><use href="#i-check"></use></svg>参数化模板与批量生成</span>
+          <span><svg class="icon"><use href="#i-check"></use></svg>受控审核、签发与长期归档</span>
+        </div>
+      </div>
+      <div class="login-brand-foot">
+        <span>非智能体版本 · 产品原型 V0.1</span>
+        <span>DEMO DATA ONLY</span>
+      </div>
+      <div class="login-orbit orbit-one"></div>
+      <div class="login-orbit orbit-two"></div>
+      <div class="login-orbit orbit-three"></div>
+    </section>
+
+    <section class="login-form-side">
+      <div class="auth-card" id="authCard">
+        <div class="login-mobile-brand">
+          <div class="brand-mark"><span></span><span></span><span></span></div>
+          <div><strong>职安文档云</strong><small>ENTERPRISE DOCS</small></div>
+        </div>
+
+        <div class="auth-tabs" id="authTabs" role="tablist" aria-label="账号入口">
+          <button class="active" type="button" role="tab" aria-selected="true" data-auth-tab="login">登录</button>
+          <button type="button" role="tab" aria-selected="false" data-auth-tab="register">注册</button>
+        </div>
+
+        <div class="auth-panel" id="authLoginPanel" data-auth-panel="login">
+          <form class="auth-form" id="loginForm" novalidate>
+            <div class="login-heading">
+              <span class="login-eyebrow">ACCOUNT LOGIN</span>
+              <h2>账号登录</h2>
+              <p>登录企业文档空间，继续处理待生成与待签发文档。</p>
+            </div>
+            <div class="login-error" id="loginError" hidden>请输入账号和密码后再登录。</div>
+            <label class="login-field">
+              <span>账号</span>
+              <div class="login-input"><svg class="icon"><use href="#i-people"></use></svg><input id="loginAccount" type="text" value="" autocomplete="username" placeholder="请输入已注册的企业账号"></div>
+            </label>
+            <label class="login-field">
+              <span>密码</span>
+              <div class="login-input"><svg class="icon"><use href="#i-shield"></use></svg><input id="loginPassword" type="password" value="" autocomplete="current-password" placeholder="请输入登录密码"><button class="password-toggle" id="passwordToggle" type="button" aria-label="显示密码"><svg class="icon"><use href="#i-eye"></use></svg></button></div>
+            </label>
+            <div class="login-row">
+              <label class="login-remember"><input type="checkbox" checked><span></span>保持登录状态</label>
+              <button class="login-link" type="button" data-toast="演示环境不提供密码找回，请使用预置演示账号登录。">忘记密码？</button>
+            </div>
+            <button class="login-submit" id="loginSubmit" type="submit">登录<svg class="icon"><use href="#i-arrow"></use></svg></button>
+            <div class="demo-account-note">
+              <span>DEMO</span>
+              <p>企业账号保存在当前浏览器中；登录后只加载该账号自己的企业资料与文件。</p>
+            </div>
+            <div class="login-security"><svg class="icon"><use href="#i-shield"></use></svg><span>本地离线运行 · 无外部网络请求</span></div>
+          </form>
+        </div>
+
+        <div class="auth-panel" id="authRegisterHome" data-auth-panel="register" hidden>
+          <div class="login-heading auth-heading-spaced">
+            <span class="login-eyebrow">CREATE ACCOUNT</span>
+            <h2>选择注册身份</h2>
+            <p>企业创建独立工作空间；个人必须加入已有企业，不能脱离企业单独注册。</p>
+          </div>
+          <div class="identity-options">
+            <button class="identity-card enterprise" type="button" data-auth-view="enterprise">
+              <span class="identity-icon"><svg class="icon"><use href="#i-building"></use></svg></span>
+              <span class="identity-body">
+                <strong>企业账号</strong>
+                <p>设置账号和密码即可进入企业空间，再上传文件完善企业档案。</p>
+                <small>适合企业负责人、文档管理员</small>
+              </span>
+              <svg class="icon identity-arrow"><use href="#i-arrow"></use></svg>
+            </button>
+            <button class="identity-card personal" type="button" data-auth-view="personal">
+              <span class="identity-icon"><svg class="icon"><use href="#i-people"></use></svg></span>
+              <span class="identity-body">
+                <strong>个人账号</strong>
+                <p>使用企业协同码加入已有企业，提交后由企业管理员审核。</p>
+                <small><b>企业协同码为必填项</b></small>
+              </span>
+              <svg class="icon identity-arrow"><use href="#i-arrow"></use></svg>
+            </button>
+          </div>
+          <div class="identity-note"><svg class="icon"><use href="#i-shield"></use></svg><span>个人账号必须绑定有效企业。企业协同码由企业管理员在企业空间中查看并分发。</span></div>
+        </div>
+
+        <div class="auth-panel" id="authEnterprisePanel" data-auth-panel="enterprise" hidden>
+          <div class="auth-form-head">
+            <button class="auth-back" type="button" data-auth-view="register"><svg class="icon"><use href="#i-arrow"></use></svg>返回选择</button>
+          </div>
+          <div class="login-heading auth-heading-spaced">
+            <span class="login-eyebrow">ENTERPRISE SIGN UP</span>
+            <h2>创建企业账号</h2>
+            <p>只需设置登录账号和密码，注册后直接进入企业空间，再通过上传文件补充企业资料。</p>
+          </div>
+          <form class="auth-form" id="enterpriseRegisterForm" novalidate>
+            <div class="login-error" id="enterpriseRegisterError" hidden></div>
+            <label class="login-field">
+              <span>登录账号 <b>*</b></span>
+              <div class="login-input"><svg class="icon"><use href="#i-people"></use></svg><input id="enterpriseAccount" name="account" type="text" autocomplete="username" placeholder="请输入企业登录账号"></div>
+            </label>
+            <label class="login-field">
+              <span>登录密码 <b>*</b></span>
+              <div class="login-input"><svg class="icon"><use href="#i-shield"></use></svg><input id="enterprisePassword" name="password" type="password" autocomplete="new-password" placeholder="至少 6 位"><button class="password-toggle" type="button" data-password-target="enterprisePassword" aria-label="显示密码"><svg class="icon"><use href="#i-eye"></use></svg></button></div>
+            </label>
+            <div class="quick-register-note">
+              <span class="quick-register-icon"><svg class="icon"><use href="#i-upload"></use></svg></span>
+              <div><strong>进入后上传资料即可完善档案</strong><p>支持营业执照、企业信息表、岗位清单、员工名册、制度文件和检测报告，系统将自动识别并归类。</p></div>
+            </div>
+            <button class="login-submit auth-submit-spaced" id="enterpriseRegisterSubmit" type="submit">创建并进入企业空间<svg class="icon"><use href="#i-arrow"></use></svg></button>
+            <p class="auth-consent-copy">点击注册即表示同意《企业服务协议》和《隐私政策》</p>
+            <div class="login-security"><svg class="icon"><use href="#i-shield"></use></svg><span>本地离线演示 · 文件不会上传到任何服务器</span></div>
+          </form>
+        </div>
+
+        <div class="auth-panel" id="authPersonalPanel" data-auth-panel="personal" hidden>
+          <div class="auth-form-head">
+            <button class="auth-back" type="button" data-auth-view="register"><svg class="icon"><use href="#i-arrow"></use></svg>返回选择</button>
+            <button class="auth-demo-fill" id="fillPersonalDemo" type="button">填入示例并验证</button>
+          </div>
+          <div class="login-heading auth-heading-spaced">
+            <span class="login-eyebrow">PERSONAL SIGN UP</span>
+            <h2>加入企业空间</h2>
+            <p>企业协同码是个人注册的必要条件，验证通过后才能提交注册申请。</p>
+          </div>
+          <form class="auth-form" id="personalRegisterForm" novalidate>
+            <div class="login-error" id="personalRegisterError" hidden></div>
+            <div class="company-code-box">
+              <div class="company-code-head"><span><b>1</b> 验证企业归属</span><small>必填</small></div>
+              <div class="code-input-row">
+                <div class="login-input"><svg class="icon"><use href="#i-building"></use></svg><input id="personalCompanyCode" name="companyCode" type="text" autocomplete="off" placeholder="请输入企业协同码，如 HDJM-8K3F"></div>
+                <button class="code-verify-button" id="verifyCompanyCode" type="button">验证</button>
+              </div>
+              <div class="company-code-hint" id="companyCodeHint">企业协同码由企业管理员在企业空间中生成并分发。</div>
+              <div class="company-verify-result" id="companyVerifyResult" hidden>
+                <span class="verified-icon"><svg class="icon"><use href="#i-check"></use></svg></span>
+                <div><strong id="verifiedCompanyName"></strong><span id="verifiedCompanyMeta"></span></div>
+                <b>已验证</b>
+              </div>
+              <div class="demo-code-note"><span>DEMO</span>演示可用协同码 <code>HDJM-8K3F</code><button type="button" id="fillCompanyCode">填入</button></div>
+            </div>
+            <div class="auth-form-grid">
+              <label class="login-field">
+                <span>姓名 <b>*</b></span>
+                <div class="login-input"><svg class="icon"><use href="#i-people"></use></svg><input id="personalName" name="name" type="text" autocomplete="name" placeholder="请输入真实姓名"></div>
+              </label>
+              <label class="login-field">
+                <span>手机号 <b>*</b></span>
+                <div class="login-input"><svg class="icon"><use href="#i-shield"></use></svg><input id="personalPhone" name="phone" type="tel" maxlength="11" autocomplete="tel" placeholder="11 位手机号"></div>
+              </label>
+              <label class="login-field">
+                <span>所属部门 <b>*</b></span>
+                <div class="login-input"><svg class="icon"><use href="#i-grid"></use></svg><select id="personalDepartment" name="department"><option value="">请选择</option><option>安全环保部</option><option>人力资源部</option><option>生产制造部</option><option>设备动力部</option><option>质量管理部</option><option>综合管理部</option></select></div>
+              </label>
+              <label class="login-field">
+                <span>岗位 <b>*</b></span>
+                <div class="login-input"><svg class="icon"><use href="#i-people"></use></svg><input id="personalPosition" name="position" type="text" placeholder="例如：职业健康专员"></div>
+              </label>
+              <label class="login-field">
+                <span>登录账号 <b>*</b></span>
+                <div class="login-input"><svg class="icon"><use href="#i-people"></use></svg><input id="personalAccount" name="account" type="text" autocomplete="username" placeholder="建议使用字母或数字"></div>
+              </label>
+              <label class="login-field">
+                <span>企业邀请码 <small>选填</small></span>
+                <div class="login-input"><svg class="icon"><use href="#i-shield"></use></svg><input id="personalInviteCode" name="inviteCode" type="text" placeholder="如企业开启邀请限制"></div>
+              </label>
+              <label class="login-field">
+                <span>设置密码 <b>*</b></span>
+                <div class="login-input"><svg class="icon"><use href="#i-shield"></use></svg><input id="personalPassword" name="password" type="password" autocomplete="new-password" placeholder="至少 6 位"><button class="password-toggle" type="button" data-password-target="personalPassword" aria-label="显示密码"><svg class="icon"><use href="#i-eye"></use></svg></button></div>
+              </label>
+              <label class="login-field">
+                <span>确认密码 <b>*</b></span>
+                <div class="login-input"><svg class="icon"><use href="#i-shield"></use></svg><input id="personalPasswordConfirm" name="passwordConfirm" type="password" autocomplete="new-password" placeholder="请再次输入密码"></div>
+              </label>
+            </div>
+            <div class="personal-gate-note" id="personalGateNote"><svg class="icon"><use href="#i-alert"></use></svg><span>请先验证企业协同码，验证通过后“提交注册申请”才会启用。</span></div>
+            <label class="auth-consent"><input id="personalAgreement" type="checkbox"><span class="auth-check"></span><em>我已阅读并同意《个人服务协议》和《隐私政策》</em></label>
+            <button class="login-submit auth-submit-spaced" id="personalRegisterSubmit" type="submit" disabled>提交注册申请<svg class="icon"><use href="#i-arrow"></use></svg></button>
+            <div class="login-security"><svg class="icon"><use href="#i-clock"></use></svg><span>提交后需企业管理员审核，审核通过方可登录</span></div>
+          </form>
+        </div>
+
+        <section class="auth-result auth-result-wide" id="personalPending" data-auth-panel="personalPending" hidden>
+          <div class="result-hero">
+            <span class="result-pending-icon"><svg class="icon"><use href="#i-clock"></use></svg></span>
+            <span class="login-eyebrow">APPLICATION SUBMITTED</span>
+            <h2>注册申请已提交</h2>
+            <p>企业协同码验证通过，申请已发送给 <strong id="pendingCompanyName"></strong> 的企业管理员。</p>
+          </div>
+          <div class="pending-summary">
+            <div><span>申请成员</span><strong id="pendingPersonName"></strong></div>
+            <div><span>企业协同码</span><strong id="pendingCompanyCode"></strong></div>
+            <div><span>所属部门 / 岗位</span><strong id="pendingDepartment"></strong></div>
+            <div><span>当前状态</span><b><i></i>待企业管理员审核</b></div>
+          </div>
+          <div class="approval-track">
+            <div class="approval-step done"><i><svg class="icon"><use href="#i-check"></use></svg></i><div><strong>企业归属已验证</strong><span>协同码与企业档案匹配</span></div></div>
+            <div class="approval-step done"><i><svg class="icon"><use href="#i-check"></use></svg></i><div><strong>注册申请已提交</strong><span>成员信息已记录</span></div></div>
+            <div class="approval-step active"><i>3</i><div><strong>等待企业管理员审核</strong><span>管理员确认部门、岗位与数据权限</span></div></div>
+            <div class="approval-step"><i>4</i><div><strong>账号开通</strong><span>审核通过后可使用账号登录</span></div></div>
+          </div>
+          <div class="pending-actions">
+            <button class="button button-secondary" id="pendingLoginButton" type="button">返回登录</button>
+            <button class="login-submit" id="pendingDemoEnterButton" type="button">演示：模拟审核通过并进入<svg class="icon"><use href="#i-arrow"></use></svg></button>
+          </div>
+          <div class="login-security"><svg class="icon"><use href="#i-shield"></use></svg><span>正式系统应由企业管理员或平台审核，不能由申请人自行通过</span></div>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <script src="vendor/pdf.min.js" defer></script>
+  <script src="vendor/xlsx.full.min.js" defer></script>
+  <script src="vendor/jszip.min.js" defer></script>
+  <script src="mapping.js" defer></script>
+  <script src="parsers.js" defer></script>
+  <script src="templates.js" defer></script>
+  <script src="app.js" defer></script>
+</body>
+</html>

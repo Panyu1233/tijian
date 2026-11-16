@@ -9,3 +9,30 @@ desktop.ini
 /职业卫生管理资料/8.企业职业卫生档案/
 /职业卫生管理资料/新员工体检报告/
 /职业卫生管理资料.rar
+
+# 本地预览测试产物、OCR 原文与浏览器缓存
+/$null
+/preview/$null
+/preview/.edge-profile-license/
+/preview/ocr_pages/
+/preview/ocr_license/
+/preview/ocr_text/
+/preview/_ocr_input.pdf
+/preview/_license_input.pdf
+/preview/*OCR识别结果*
+/preview/*OCR关键字段*
+/preview/*.png
+/preview/*.bak
+/preview/*.log
+/preview/tmp-*.cjs
+/preview/inspect-*.cjs
+/preview/apply-*.cjs
+/preview/license-parsed.html
+/preview/ocr-license-render.html
+/preview/ocr-render.html
+/preview/ocr-winrt.ps1
+/preview/test.txt
+/preview/e2e-generated-document.doc
+
+# 本地接续文件
+/HANDOFF.md
