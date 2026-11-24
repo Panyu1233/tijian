@@ -18,6 +18,7 @@
 
   const HEADER_ALIASES = {
     name: ["姓名", "员工姓名", "人员姓名"],
+    gender: ["性别"],
     idNumber: ["身份证号", "身份证号码", "证件号码"],
     phone: ["联系电话", "手机号", "手机号码", "电话"],
     position: ["工种", "岗位", "工作岗位"],
@@ -28,6 +29,19 @@
     examStatus: ["体检状态", "检查状态", "体检结论"],
     exposureYear: ["接害工龄(年)", "接害工龄（年）", "接害工龄"],
     totalYear: ["总工龄(年)", "总工龄（年）", "总工龄"]
+  };
+
+  const EXAM_HEADER_ALIASES = {
+    name: ["姓名", "员工姓名", "人员姓名"],
+    idNumber: ["身份证号", "身份证号码", "证件号码"],
+    examDate: ["检查日期", "体检日期", "报告日期", "检查时间"],
+    organization: ["检查机构", "体检机构", "医疗机构", "报告出具机构"],
+    examType: ["体检类别", "体检类型", "检查类别"],
+    conclusion: ["检查结论", "体检结论", "结论", "检查结果"],
+    advice: ["处理建议", "建议", "复查建议", "医学建议"],
+    reviewDate: ["复查日期", "建议复查日期"],
+    reportNo: ["报告编号", "体检编号", "检查编号"],
+    items: ["检查项目", "体检项目", "检查内容"]
   };
 
   function compact(value) {
@@ -47,6 +61,21 @@
     if (result.text) return String(result.text);
     if (Array.isArray(result.pages)) return result.pages.map((page) => page && page.text || "").join("\n");
     return "";
+  }
+
+  function structuredFieldText(file) {
+    const direct = fileText(file);
+    if (direct) return direct;
+    const sheets = file && file.parseResult && Array.isArray(file.parseResult.sheets) ? file.parseResult.sheets : [];
+    return sheets.map((sheet) => {
+      const rows = Array.isArray(sheet && sheet.rows) ? sheet.rows : [];
+      return rows.map((row) => {
+        const cells = Array.isArray(row) ? row : [];
+        const label = String(cells[0] == null ? "" : cells[0]).trim();
+        const value = String(cells[1] == null ? "" : cells[1]).trim();
+        return label && value ? label + "：" + value : "";
+      }).filter(Boolean).join("\n");
+    }).filter(Boolean).join("\n");
   }
 
   function categoryFiles(files, category) {
@@ -119,7 +148,7 @@
 
   function extractCompanyProfile(files) {
     const companyFiles = categoryFiles(files, "company");
-    const text = companyFiles.map(fileText).filter(Boolean).join("\n");
+    const text = companyFiles.map(structuredFieldText).filter(Boolean).join("\n");
     if (!text) return { profile: {}, warnings: [], sourceFileIds: [], mappedFields: [] };
 
     const employeeCountValue = findField(text, ["职工总人数", "员工总人数", "总人数"], ["女职工人数", "生产工人数", "接触有毒有害作业人数"]);
@@ -196,6 +225,7 @@
           const cells = Array.isArray(row) ? row : [];
           const get = (key) => indexes[key] >= 0 ? String(cells[indexes[key]] == null ? "" : cells[indexes[key]]).trim() : "";
           const name = get("name");
+          const gender = get("gender");
           if (!name || /姓名|注意|合计|总计/.test(name)) return;
           const idNumber = get("idNumber").toUpperCase();
           const position = get("position");
@@ -205,6 +235,7 @@
           const examStatus = get("examStatus");
           const mappedFields = [];
           if (name) mappedFields.push("姓名");
+          if (gender) mappedFields.push("性别");
           if (idNumber) mappedFields.push("身份证号");
           if (get("phone")) mappedFields.push("联系电话");
           if (position) mappedFields.push("岗位");
@@ -217,6 +248,7 @@
           mappedFields.forEach((field) => fieldUnion.add(field));
           employees.push({
             name,
+            gender,
             idNumber,
             phone: get("phone"),
             position,
@@ -245,6 +277,140 @@
       mappedFields: Array.from(fieldUnion),
       sourceFileIds: employeeFiles.map((file) => file.id)
     };
+  }
+
+  function normalizeExamDate(value) {
+    const raw = String(value || "").trim();
+    const match = /(20\d{2})[年./-](\d{1,2})[月./-](\d{1,2})/.exec(raw);
+    if (!match) return raw;
+    return match[1] + "-" + String(match[2]).padStart(2, "0") + "-" + String(match[3]).padStart(2, "0");
+  }
+
+  function examTextValue(text, aliases) {
+    const escaped = aliases.map(escapeRegExp).join("|");
+    const pattern = new RegExp("(?:^|[\\n\\r])\\s*(?:" + escaped + ")\\s*[：:]\\s*([^\\n\\r]+)", "i");
+    const match = pattern.exec(String(text || ""));
+    if (!match) return "";
+    return match[1].split(/\s{2,}/)[0].replace(/[；;]+$/, "").trim();
+  }
+
+  function examNameFromFile(fileName) {
+    const base = String(fileName || "").replace(/\.[^.]+$/, "")
+      .replace(/^(职业健康检查报告|职业健康体检报告|体检报告|健康检查报告)[-_—\s]*/i, "")
+      .replace(/[-_—]?(个人|员工)?(体检|检查)报告$/i, "").trim();
+    const match = /^[\u4e00-\u9fa5]{2,4}/.exec(base);
+    return match ? match[0] : "";
+  }
+
+  function extractPhysicalExams(files) {
+    const examFiles = categoryFiles(files, "exam");
+    const exams = [];
+    const addExam = (exam, file) => {
+      if (!exam || (!exam.employeeName && !exam.idNumber)) return;
+      const key = compact(exam.idNumber) + "|" + compact(exam.employeeName) + "|" + compact(exam.examDate);
+      const existing = exams.find((item) => item.key === key);
+      const normalized = Object.assign({
+        employeeName: "",
+        idNumber: "",
+        examDate: "",
+        organization: "",
+        examType: "",
+        conclusion: "",
+        advice: "",
+        reviewDate: "",
+        reportNo: "",
+        items: "",
+        sourceFileId: file && file.id || ""
+      }, exam, { key: key });
+      normalized.examDate = normalizeExamDate(normalized.examDate);
+      normalized.reviewDate = normalizeExamDate(normalized.reviewDate);
+      if (!existing) exams.push(normalized);
+      else Object.keys(normalized).forEach((field) => {
+        if (!existing[field] && normalized[field]) existing[field] = normalized[field];
+      });
+    };
+
+    examFiles.forEach((file) => {
+      const result = file.parseResult || {};
+      const sheets = Array.isArray(result.sheets) ? result.sheets : [];
+      sheets.forEach((sheet) => {
+        const rows = Array.isArray(sheet.rows) ? sheet.rows : [];
+        const headerIndex = rows.findIndex((row) => {
+          const headers = Array.isArray(row) ? row : [];
+          return findHeaderIndex(headers, EXAM_HEADER_ALIASES.name) >= 0 &&
+            (findHeaderIndex(headers, EXAM_HEADER_ALIASES.conclusion) >= 0 || findHeaderIndex(headers, EXAM_HEADER_ALIASES.examDate) >= 0);
+        });
+        if (headerIndex < 0) return;
+        const headers = rows[headerIndex].map(compact);
+        const indexes = {};
+        Object.keys(EXAM_HEADER_ALIASES).forEach((key) => {
+          indexes[key] = findHeaderIndex(headers, EXAM_HEADER_ALIASES[key]);
+        });
+        rows.slice(headerIndex + 1).forEach((row) => {
+          const cells = Array.isArray(row) ? row : [];
+          const get = (key) => indexes[key] >= 0 ? String(cells[indexes[key]] == null ? "" : cells[indexes[key]]).trim() : "";
+          const employeeName = get("name");
+          if (!employeeName || /姓名|合计|总计/.test(employeeName)) return;
+          addExam({
+            employeeName: employeeName,
+            idNumber: get("idNumber").toUpperCase(),
+            examDate: get("examDate"),
+            organization: get("organization"),
+            examType: get("examType"),
+            conclusion: get("conclusion"),
+            advice: get("advice"),
+            reviewDate: get("reviewDate"),
+            reportNo: get("reportNo"),
+            items: get("items")
+          }, file);
+        });
+      });
+
+      const source = fileText(file);
+      if (!source) return;
+      const blocks = source.split(/(?=(?:^|[\n\r])\s*姓名\s*[：:])/).filter((block) => /姓名\s*[：:]/.test(block));
+      (blocks.length ? blocks : [source]).forEach((block) => {
+        addExam({
+          employeeName: examTextValue(block, EXAM_HEADER_ALIASES.name) || examNameFromFile(file.name),
+          idNumber: examTextValue(block, EXAM_HEADER_ALIASES.idNumber).toUpperCase(),
+          examDate: examTextValue(block, EXAM_HEADER_ALIASES.examDate),
+          organization: examTextValue(block, EXAM_HEADER_ALIASES.organization),
+          examType: examTextValue(block, EXAM_HEADER_ALIASES.examType),
+          conclusion: examTextValue(block, EXAM_HEADER_ALIASES.conclusion),
+          advice: examTextValue(block, EXAM_HEADER_ALIASES.advice),
+          reviewDate: examTextValue(block, EXAM_HEADER_ALIASES.reviewDate),
+          reportNo: examTextValue(block, EXAM_HEADER_ALIASES.reportNo),
+          items: examTextValue(block, EXAM_HEADER_ALIASES.items)
+        }, file);
+      });
+    });
+
+    return {
+      exams: exams.map((exam) => Object.assign({}, exam, { key: undefined })),
+      sourceFileIds: examFiles.map((file) => file.id),
+      mappedFields: exams.length ? ["体检日期", "检查机构", "检查结论", "处理建议"] : []
+    };
+  }
+
+  function attachPhysicalExams(employees, exams) {
+    return employees.map((employee) => {
+      const idNumber = compact(employee.idNumber).toUpperCase();
+      const name = compact(employee.name);
+      const exam = exams.find((item) => {
+        if (idNumber && compact(item.idNumber).toUpperCase() === idNumber) return true;
+        return Boolean(name) && compact(item.employeeName) === name;
+      });
+      if (!exam) return Object.assign({}, employee, { physicalExam: null, examStatus: employee.examStatus || "待补充" });
+      return Object.assign({}, employee, {
+        gender: employee.gender || exam.gender || "",
+        physicalExam: exam,
+        examDate: exam.examDate,
+        examOrganization: exam.organization,
+        examConclusion: exam.conclusion,
+        examAdvice: exam.advice,
+        examStatus: employee.examStatus || exam.conclusion || "已取得体检报告"
+      });
+    });
   }
 
   function cleanPointDetail(value) {
@@ -494,18 +660,22 @@
     const companyResult = extractCompanyProfile(files);
     const employeeResult = extractEmployees(files);
     const reportResult = extractDetectionReport(files);
-    const positions = derivePositions(employeeResult.employees, reportResult);
+    const examResult = extractPhysicalExams(files);
+    const employees = attachPhysicalExams(employeeResult.employees, examResult.exams);
+    const positions = derivePositions(employees, reportResult);
     const systems = extractSystems(files);
     const mappedCategories = [];
     if (companyResult.mappedFields.length) mappedCategories.push("company");
     if (positions.length || reportResult.points.length || reportResult.hazards.length) mappedCategories.push("positions");
     if (employeeResult.employees.length) mappedCategories.push("employees");
+    if (examResult.exams.length) mappedCategories.push("exam");
     if (systems.length) mappedCategories.push("systems");
     const sourceFileIds = unique(companyResult.sourceFileIds
       .concat(employeeResult.sourceFileIds)
       .concat(reportResult.sourceFileIds)
+      .concat(examResult.sourceFileIds)
       .concat(systems.map((item) => item.sourceFileId)));
-    const mappedItemCount = companyResult.mappedFields.length + employeeResult.employees.length + positions.length + reportResult.points.length + systems.length;
+    const mappedItemCount = companyResult.mappedFields.length + employees.length + positions.length + reportResult.points.length + examResult.exams.length + systems.length;
     const warnings = [];
     if (companyResult.profile.companyName && reportResult.companyName && companyResult.profile.companyName !== reportResult.companyName) {
       warnings.push({
@@ -519,11 +689,12 @@
       mappedAt: new Date().toISOString(),
       profile: Object.assign({}, companyResult.profile, company && company.profileOverrides || {}),
       profileFields: companyResult.mappedFields,
-      employees: employeeResult.employees,
+      employees: employees,
       employeeFields: employeeResult.mappedFields,
       positions,
       detectionPoints: reportResult.points,
       report: reportResult,
+      exams: examResult.exams,
       systems,
       mappedCategories: unique(mappedCategories),
       sourceFileIds,

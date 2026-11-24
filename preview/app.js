@@ -194,6 +194,7 @@
     closeMobileNav();
     closeModal();
     closeEnterpriseImportModal(true);
+    closeCompanyEditModal();
     loginScreen.hidden = false;
     if (appFrame) appFrame.hidden = true;
     document.body.classList.add("login-open");
@@ -205,6 +206,7 @@
     loggingIn = false;
     setAuthView("login");
     writeSession("zadocs_session_company_code", null);
+    writeSession("zadocs_session_member_account", null);
     if (persistLogout) writeSession("zadocs_logged_out", "1");
     setTimeout(() => loginAccount.focus(), 80);
   }
@@ -217,11 +219,17 @@
     resetArchiveViewState();
   }
 
-  function applyWorkspace(companyName, userName, role) {
+  function updateWorkspaceCompanyName(companyName) {
+    const name = String(companyName || "").trim();
+    if (!name) return;
     const workspaceName = $(".workspace-copy strong");
     const workspaceAvatar = $(".workspace-avatar");
-    if (workspaceName) workspaceName.textContent = companyName;
-    if (workspaceAvatar) workspaceAvatar.textContent = companyName.slice(0, 1);
+    if (workspaceName) workspaceName.textContent = name;
+    if (workspaceAvatar) workspaceAvatar.textContent = name.slice(0, 1);
+  }
+
+  function applyWorkspace(companyName, userName, role, loginAccount) {
+    updateWorkspaceCompanyName(companyName);
     if (userName) {
       const initial = userName.slice(0, 1);
       userMenuButton.textContent = initial;
@@ -237,7 +245,7 @@
       if (sidebarRole) sidebarRole.textContent = role || "企业成员";
       if (accountAvatar) accountAvatar.textContent = initial;
       if (accountName) accountName.textContent = userName;
-      if (accountAccount) accountAccount.textContent = currentEnterprise ? currentEnterprise.account : userName;
+      if (accountAccount) accountAccount.textContent = loginAccount || (currentEnterprise ? currentEnterprise.account : userName);
       if (accountRole) accountRole.innerHTML = "<i></i>" + escapeHtml(role || "企业成员") + " · 当前在线";
     }
   }
@@ -261,7 +269,8 @@
     applyWorkspace(
       company.name,
       sessionUser && sessionUser.name || company.account || "企业管理员",
-      sessionUser && sessionUser.role || "企业管理员"
+      sessionUser && sessionUser.role || "企业管理员",
+      sessionUser && sessionUser.account || company.account
     );
     hideLoginScreen();
   }
@@ -353,6 +362,29 @@
     const account = normalizeAccount(value);
     if (!account) return null;
     return companyDirectory.find((company) => normalizeAccount(company.account) === account) || null;
+  }
+
+  function ensureCompanyMembers(company) {
+    if (!company) return [];
+    if (!Array.isArray(company.members)) company.members = [];
+    company.members = company.members.filter((member) => member && member.account);
+    return company.members;
+  }
+
+  function findMemberByAccount(value) {
+    const account = normalizeAccount(value);
+    if (!account) return null;
+    for (const company of companyDirectory) {
+      const member = ensureCompanyMembers(company).find((item) => normalizeAccount(item.account) === account);
+      if (member) return { company, member };
+    }
+    return null;
+  }
+
+  function findLoginIdentity(value) {
+    const company = findCompanyByAccount(value);
+    if (company) return { company, member: null };
+    return findMemberByAccount(value);
   }
 
   function resetCompanyVerification() {
@@ -457,20 +489,30 @@
       return;
     }
 
-    const company = findCompanyByAccount(account);
-    if (!company) {
-      loginError.textContent = "该企业账号不存在，请先注册企业账号。";
+    const identity = findLoginIdentity(account);
+    if (!identity) {
+      loginError.textContent = "账号不存在，请先注册企业账号或提交个人成员申请。";
       loginError.hidden = false;
       loginAccount.focus();
       return;
     }
-    if (company.passwordDigest && company.passwordDigest !== buildPasswordDigest(company.account, password)) {
+    const member = identity.member;
+    const company = identity.company;
+    if (member && member.status !== "approved") {
+      loginError.textContent = member.status === "pending"
+        ? "个人成员申请尚待企业管理员审核，审核通过后才能登录。"
+        : "该成员账号当前不可用，请联系企业管理员。";
+      loginError.hidden = false;
+      return;
+    }
+    const expectedDigest = member ? member.passwordDigest : company.passwordDigest;
+    if (expectedDigest && expectedDigest !== buildPasswordDigest(account, password)) {
       loginError.textContent = "登录密码不正确，请重新输入。";
       loginError.hidden = false;
       loginPassword.focus();
       return;
     }
-    if (!company.passwordDigest) {
+    if (!member && !company.passwordDigest) {
       // Migrate accounts created by the earlier local preview, which did not persist a password.
       company.passwordDigest = buildPasswordDigest(company.account, password);
       saveCompany(company);
@@ -480,11 +522,11 @@
     loginSubmit.textContent = "正在加载企业空间...";
     setTimeout(() => {
       loggingIn = false;
-      activateEnterprise(company);
+      activateEnterprise(company, member);
       setView(resolveViewFromHash(), false);
       loginSubmit.disabled = false;
       loginSubmit.innerHTML = loginSubmitMarkup;
-      showToast("已加载企业账号 " + company.account + " 的独立资料空间。", "登录成功");
+      showToast((member ? "已加载个人成员账号 " : "已加载企业账号 ") + account + " 的独立资料空间。", "登录成功");
     }, 650);
   });
 
@@ -507,8 +549,9 @@
   const importCategoryLabels = {
     company: "企业主体资料",
     employees: "员工与人员名册",
-    positions: "岗位与危害因素",
-    systems: "制度与补充资料"
+    positions: "职业病危害检测报告",
+    exam: "体检报告（建议）",
+    systems: "制度与其他补充资料"
   };
   const REQUIRED_IMPORT_CATEGORIES = ["company", "employees", "positions"];
   let selectedImportFiles = [];
@@ -518,8 +561,9 @@
   function classifyImportFile(fileName) {
     const name = String(fileName || "").toLowerCase();
     if (/(营业执照|证照|资质)/.test(name)) return "company";
+    if (/(体检报告|职业健康检查报告|健康检查报告|体检结果|检查结果|体检卡|复查报告)/.test(name)) return "exam";
     if (/(员工|人员|名册|花名册|体检登记|体检名单|监护|职工|人力资源|预约体检)/.test(name)) return "employees";
-    if (/(岗位|危害|检测|职业病危害因素|工作场所|环境检测)/.test(name)) return "positions";
+    if (/(岗位|危害|检测报告|职业病危害因素|工作场所|环境检测|检测结果)/.test(name)) return "positions";
     if (/(企业信息|信息采集|单位信息|工商|信用代码|法人|企业主体)/.test(name)) return "company";
     if (/(企业|公司)/.test(name)) return "company";
     if (/(制度|预案|规程|补充|培训|防护用品|管理)/.test(name)) return "systems";
@@ -579,7 +623,7 @@
     }
     if (!selectedImportFiles.length) {
       enterpriseImportValidation.hidden = false;
-      enterpriseImportValidation.innerHTML = '<span class="validation-warn"><svg class="icon tiny"><use href="#i-alert"></use></svg>必选：企业主体资料、员工与人员名册、岗位与危害因素；制度与补充资料可选。</span>';
+      enterpriseImportValidation.innerHTML = '<span class="validation-warn"><svg class="icon tiny"><use href="#i-alert"></use></svg>必选：企业主体资料、员工与人员名册、职业病危害检测报告；体检报告建议补充，制度与其他资料可选。</span>';
       return;
     }
     enterpriseImportValidation.hidden = false;
@@ -587,14 +631,14 @@
     const summary = Object.keys(groupLabels).map((key) => groupLabels[key] + ' ' + validation.counts[key] + ' 份').join(' · ');
     enterpriseImportValidation.innerHTML = validation.missing.length
       ? '<span class="validation-warn"><svg class="icon tiny"><use href="#i-alert"></use></svg>' + escapeHtml(summary) + '；尚缺 ' + escapeHtml(validation.missing.map((key) => groupLabels[key]).join('、')) + '，补齐后才能提交。</span>'
-      : '<span class="validation-ok"><svg class="icon tiny"><use href="#i-check"></use></svg>' + escapeHtml(summary) + '；三类必选资料已齐备，可以提交解析。</span>';
+      : '<span class="validation-ok"><svg class="icon tiny"><use href="#i-check"></use></svg>' + escapeHtml(summary) + '；三类必选资料已齐备，可以提交解析；体检报告与其他资料可选。</span>';
   }
 
   function getFileCategoryCounts(files) {
     return (Array.isArray(files) ? files : []).reduce((counts, file) => {
       if (file && importCategoryLabels[file.category]) counts[file.category] += 1;
       return counts;
-    }, { company: 0, employees: 0, positions: 0, systems: 0 });
+    }, { company: 0, employees: 0, positions: 0, exam: 0, systems: 0 });
   }
 
   function setElementText(selector, value) {
@@ -1074,6 +1118,14 @@
         document.signedAt = "";
         changed = true;
       }
+      if (!Object.prototype.hasOwnProperty.call(document, "submittedAt")) {
+        document.submittedAt = "";
+        changed = true;
+      }
+      if (!Object.prototype.hasOwnProperty.call(document, "archivedAt")) {
+        document.archivedAt = "";
+        changed = true;
+      }
       if (!document.retention) {
         document.retention = "30 年";
         changed = true;
@@ -1145,7 +1197,7 @@
       const parsedInCategory = categoryFiles.filter((file) => file.parseStatus === "parsed");
       const pendingInCategory = parsedInCategory.filter((file) => !file.reviewedAt);
       const issuesInCategory = categoryFiles.filter((file) => ["failed", "ocr-required", "legacy", "pending"].includes(file.parseStatus));
-      if (!categoryFiles.length) states[category] = { key: "missing", label: category === "systems" ? "可选未上传" : "待上传", files: categoryFiles };
+      if (!categoryFiles.length) states[category] = { key: "missing", label: category === "exam" ? "建议补充" : category === "systems" ? "可选未上传" : "待上传", files: categoryFiles };
       else if (issuesInCategory.length || !parsedInCategory.length) states[category] = { key: "issue", label: "待处理", files: categoryFiles };
       else if (pendingInCategory.length) states[category] = { key: "review", label: "待核查", files: categoryFiles };
       else states[category] = { key: "reviewed", label: "文件已核查", files: categoryFiles };
@@ -1183,7 +1235,7 @@
     element.innerHTML = '<span class="missing">' + escapeHtml(label) + '</span>';
   }
 
-  const ENTERPRISE_MAPPING_VERSION = "1";
+  const ENTERPRISE_MAPPING_VERSION = "2";
 
   function getEnterpriseMappingSignature(company) {
     const reviewedFiles = getOwnedCompanyFiles(company)
@@ -1199,6 +1251,35 @@
     return "mapper-" + ENTERPRISE_MAPPING_VERSION + "::" + reviewedFiles.join("::");
   }
 
+  function syncCompanyIdentityFromMapping(company, mapping) {
+    if (!company || !mapping) return false;
+    const profile = mapping.profile || {};
+    const assignments = {
+      name: profile.companyName,
+      creditCode: profile.creditCode,
+      address: profile.address,
+      industry: profile.industry,
+      legalRepresentative: profile.legalRepresentative,
+      contactName: profile.contactName,
+      contactPhone: profile.contactPhone,
+      year: profile.year,
+      scale: profile.scale,
+      employeeCount: profile.employeeCount,
+      exposedCount: profile.exposedCount
+    };
+    let changed = false;
+    Object.keys(assignments).forEach((key) => {
+      const value = assignments[key] == null ? "" : String(assignments[key]).trim();
+      if (!value) return;
+      if (String(company[key] || "") !== value) {
+        company[key] = value;
+        changed = true;
+      }
+    });
+    if (company.name) updateWorkspaceCompanyName(company.name);
+    return changed;
+  }
+
   function ensureEnterpriseMapping(company) {
     if (!company) return null;
     ensureLibraryFileMetadata(company);
@@ -1212,12 +1293,16 @@
       return null;
     }
     const existing = company.enterpriseMapping;
-    if (existing && existing.version === 1 && existing.signature === signature) return existing;
+    if (existing && existing.version === 1 && existing.signature === signature) {
+      if (syncCompanyIdentityFromMapping(company, existing)) saveCompany(company);
+      return existing;
+    }
     if (!window.EnterpriseMapper || typeof window.EnterpriseMapper.build !== "function") return null;
     try {
       const mapping = window.EnterpriseMapper.build(company);
       mapping.signature = signature;
       company.enterpriseMapping = mapping;
+      syncCompanyIdentityFromMapping(company, mapping);
       saveCompany(company);
       return mapping;
     } catch (error) {
@@ -1563,9 +1648,9 @@
     setElementText("#newCompanyCode", company.code);
     setElementText("#currentCompanyTitle", company.name);
     setElementText("#currentCompanyLogo", company.name.slice(0, 1) || "企");
-    setElementText("#currentCompanyCredit", "统一社会信用代码：待上传营业执照后识别");
+    setElementText("#currentCompanyCredit", "统一社会信用代码：待上传营业执照或企业基本信息表后识别");
     setCompanyStatus("待完善", "pending");
-    setProfileCompleteness(0, "请上传企业主体、岗位、员工和制度资料");
+    setProfileCompleteness(0, "请上传企业主体资料、人员名单和职业病危害检测报告；体检报告建议补充。");
     setElementText("#enterpriseIndustry", "待识别");
     setElementText("#enterpriseScale", "待识别");
     setElementText("#enterpriseExposed", "待识别");
@@ -1581,7 +1666,7 @@
     setElementText("#systemStatValue", "0");
     setElementText("#systemStatHint", "管理制度尚未导入");
     setElementText("#positionMapBadge", "0 个岗位");
-    resetPositionTable("尚未导入岗位与危害因素资料。上传后，系统将在这里生成岗位映射待核清单。");
+    resetPositionTable("尚未导入职业病危害检测报告。上传并核查后，系统将在这里生成岗位与危害映射清单。");
     resetEmployeeImportPanel("尚未导入员工名册", "需至少包含姓名、部门、岗位、接害因素、入职时间和体检状态 6 个字段。");
     renderLibrary(company);
     renderDashboard(company);
@@ -1637,10 +1722,11 @@
   }
 
   const libraryCategoryMeta = [
-    { key: "company", target: 16, tone: "blue" },
-    { key: "positions", target: 15, tone: "indigo" },
-    { key: "employees", target: 18, tone: "amber" },
-    { key: "systems", target: 12, tone: "green" }
+    { key: "company", target: 1, tone: "blue" },
+    { key: "positions", target: 1, tone: "indigo" },
+    { key: "employees", target: 1, tone: "amber" },
+    { key: "systems", target: 1, tone: "green" },
+    { key: "exam", target: 1, tone: "red" }
   ];
 
   function renderEnterpriseChecklist(company) {
@@ -1685,6 +1771,7 @@
       employees: mapping && Array.isArray(mapping.employees) ? mapping.employees : [],
       positions: mapping && Array.isArray(mapping.positions) ? mapping.positions : [],
       detectionPoints: mapping && Array.isArray(mapping.detectionPoints) ? mapping.detectionPoints : [],
+      exams: mapping && Array.isArray(mapping.exams) ? mapping.exams : [],
       report: mapping && mapping.report || {}
     };
   }
@@ -1695,6 +1782,7 @@
     const positions = Array.isArray(context && context.positions) ? context.positions : [];
     const employees = Array.isArray(context && context.employees) ? context.employees : [];
     const points = Array.isArray(context && context.detectionPoints) ? context.detectionPoints : [];
+    const exams = Array.isArray(context && context.exams) ? context.exams : [];
     const report = context && context.report || {};
     const companyName = String(profile.companyName || company.name || "").trim();
     const profileReady = Boolean(companyName) && !/的企业空间$/.test(companyName);
@@ -1704,23 +1792,30 @@
     const hazardsReady = positions.some((position) => Array.isArray(position.hazards) && position.hazards.length > 0);
     const missing = [];
     const warnings = [];
+    const positionTemplates = ["hazard-notice", "hazard-card", "operating-procedure", "ppe-plan"];
     if (!profileReady) missing.push("企业基本信息");
-
-    if (definition.id === "hazard-notice" || definition.id === "ppe-plan") {
+    if (positionTemplates.includes(definition.id)) {
       if (!positionReady) missing.push("岗位映射");
       if (!hazardsReady) missing.push("岗位危害因素");
-    } else if (definition.id === "health-record") {
+      if (definition.id === "hazard-notice" && !employeeReady) missing.push("员工名册");
+    }
+    if (definition.id === "health-record" || definition.id === "training-record") {
       if (!employeeReady) missing.push("员工名册");
     }
-
-    if (definition.id === "annual-assessment" && profileReady && !detectionReady) {
-      warnings.push("检测明细待补充，将生成标注免责声明的待补充稿");
+    if (definition.id === "health-record" && employeeReady && !exams.length) {
+      warnings.push("未提供体检报告，体检章节将标注待补充，不编造检查结论");
+    }
+    if (["hazard-notice", "hazard-card", "annual-assessment"].includes(definition.id) && hazardsReady && !detectionReady) {
+      warnings.push("未匹配到检测明细，相关章节将标注待补充");
     }
     if (definition.id === "facility-maintenance" && profileReady && !positionReady) {
-      warnings.push("岗位映射待补充，将按企业共用设施生成待完善稿");
+      warnings.push("岗位映射待补充，设施台账将生成待完善稿");
     }
     if (definition.id === "emergency-plan" && profileReady && (!positionReady || !hazardsReady)) {
-      warnings.push("岗位危害因素待补充，预案中的岗位处置卡将留待完善");
+      warnings.push("岗位危害因素待补充，预案中的岗位处置内容将留待完善");
+    }
+    if (definition.id === "training-plan" && profileReady && (!positionReady || !hazardsReady)) {
+      warnings.push("岗位危害因素待补充，培训重点将按通用内容生成");
     }
 
     let targets = [];
@@ -1770,6 +1865,8 @@
       return;
     }
 
+    const generationNavCount = $('.nav-item[data-view="generate"] .nav-count');
+    if (generationNavCount) generationNavCount.textContent = String(definitions.length);
     let readyCount = 0;
     let warningCount = 0;
     let blockedCount = 0;
@@ -1814,7 +1911,7 @@
     const blockedText = $("#generationBlockedText");
     if (blockedTitle) blockedTitle.textContent = blockedCount ? "为什么还有 " + blockedCount + " 份文档待补充？" : readyCount ? "当前可生成文档已按真实档案数据校验" : "当前尚未识别可生成文档";
     if (blockedText) blockedText.textContent = blockedCount
-      ? "缺少企业基本信息、岗位映射、岗位危害因素或员工名册时，对应模板会保持不可选。检测明细等待补充的企业级报告仍可生成待补充稿。"
+      ? "缺少企业基本信息、岗位映射、岗位危害因素或员工名册时，对应模板会保持不可选。体检报告缺失只影响监护档案的体检章节，不阻断其他文档生成。"
       : "企业档案、岗位、员工与检测数据已就绪。标记为“草稿”的模板含待补充提示，生成后会写入档案库并保留版本记录。";
     refreshSelectionState();
   }
@@ -1832,12 +1929,16 @@
     scopeMeta.push("其他企业不可见");
     setElementText("#archiveScopeName", company.name + " · 独立档案库");
     setElementText("#archiveScopeMeta", scopeMeta.join(" · "));
+    const archiveNavCount = $('.nav-item[data-view="archive"] .nav-count');
+    if (archiveNavCount) archiveNavCount.textContent = String(counts.total);
     setElementText("#archiveStatTotal", String(counts.total));
     setElementText("#archiveStatTotalHint", counts.total ? "均属于当前企业档案库" : "当前企业暂无档案");
-    setElementText("#archiveStatSigned", String(counts.signed));
-    setElementText("#archiveStatSignedHint", counts.total ? "签发率 " + Math.round(counts.signed / counts.total * 100) + "%" : "暂无已签发文档");
-    setElementText("#archiveStatPending", String(counts.review));
-    setElementText("#archiveStatPendingHint", counts.review ? "等待审核或签发" : "暂无待审核文档");
+    const signedTotal = counts.signed + counts.archived;
+    const pendingActionTotal = counts.draft + counts.review;
+    setElementText("#archiveStatSigned", String(signedTotal));
+    setElementText("#archiveStatSignedHint", counts.total ? "签发率 " + Math.round(signedTotal / counts.total * 100) + "%（含已归档）" : "暂无已签发文档");
+    setElementText("#archiveStatPending", String(pendingActionTotal));
+    setElementText("#archiveStatPendingHint", pendingActionTotal ? "含草稿待提交与待审核文档" : "暂无待处理文档");
     setElementText("#archiveStatExpiring", "0");
     setElementText("#archiveStatExpiringHint", "未接入到期规则");
     $$(".status-tabs button").forEach((button) => {
@@ -1981,11 +2082,11 @@
         tableBody.innerHTML = '<tr><td colspan="6"><div class="library-empty-state">' +
           '<span class="library-empty-icon"><svg class="icon"><use href="#i-folder"></use></svg></span>' +
           '<strong>尚未上传任何资料</strong>' +
-          '<p>新企业空间从 0 份资料开始。上传营业执照、岗位清单、员工名册或制度文件后，系统会在本地解析文件内容。</p>' +
+          '<p>新企业空间从 0 份资料开始。上传企业主体资料、人员名单和职业病危害检测报告三份必交材料；体检报告与现有制度可按需补充。</p>' +
           '<button class="button button-primary button-sm" type="button" data-library-upload>上传第一份资料</button>' +
           '</div></td></tr>';
       } else {
-        const tone = { company: "red", positions: "indigo", employees: "amber", systems: "green" };
+        const tone = { company: "red", positions: "indigo", employees: "amber", exam: "green", systems: "slate" };
         tableBody.innerHTML = files.map((file) => {
           const extension = getFileExtension(file.name).toUpperCase() || "FILE";
           const category = importCategoryLabels[file.category] || "其他资料";
@@ -2162,6 +2263,8 @@
 
     const reviewPanel = $("#dashboardReviewPanel");
     if (reviewPanel) reviewPanel.hidden = false;
+    const reviewAllButton = $("#dashboardReviewAllButton");
+    if (reviewAllButton) reviewAllButton.hidden = pendingReviewFiles.length === 0;
     setElementText("#dashboardReviewSummary", pendingReviewFiles.length + " 份待核查 · " + reviewedFiles.length + " 份已核查");
     setElementText("#dashboardReviewCopy", "逐份打开上传文件，确认解析内容后标记已核查。核查与文件内容只属于当前企业账号 " + company.account + "。");
     const reviewList = $("#dashboardReviewList");
@@ -2169,7 +2272,7 @@
       if (!files.length) {
         reviewList.innerHTML = '<div class="dashboard-review-empty"><span><svg class="icon"><use href="#i-upload"></use></svg></span><strong>尚未上传资料</strong><p>上传文件后会自动解析，并在这里逐份核查。</p><button class="button button-primary button-sm" type="button" data-dashboard-upload>上传第一份资料</button></div>';
       } else {
-        const tone = { company: "red", positions: "indigo", employees: "amber", systems: "green" };
+        const tone = { company: "red", positions: "indigo", employees: "amber", exam: "green", systems: "slate" };
         reviewList.innerHTML = files.map((file) => {
           const extension = getFileExtension(file.name).toUpperCase() || "FILE";
           const status = getLibraryStatus(file);
@@ -2234,6 +2337,86 @@
     }
   }
 
+  function companyEditValue(company, overrides, mappingProfile, key, fallback) {
+    if (Object.prototype.hasOwnProperty.call(overrides, key) && overrides[key] != null) return String(overrides[key]);
+    if (mappingProfile[key] != null && String(mappingProfile[key]).trim()) return String(mappingProfile[key]);
+    return company[key] == null ? fallback : String(company[key]);
+  }
+
+  function openCompanyEditModal() {
+    if (!currentEnterprise) {
+      showToast("请先登录企业账号后再编辑企业资料。", "尚未登录");
+      return;
+    }
+    const company = currentEnterprise;
+    const mappingProfile = company.enterpriseMapping && company.enterpriseMapping.profile || {};
+    const overrides = company.profileOverrides || {};
+    const fallbackName = /的企业空间$/.test(String(company.name || "")) ? "" : company.name;
+    $("#editCompanyName").value = companyEditValue(company, overrides, mappingProfile, "companyName", fallbackName);
+    $("#editCompanyCredit").value = companyEditValue(company, overrides, mappingProfile, "creditCode", "");
+    $("#editCompanyIndustry").value = companyEditValue(company, overrides, mappingProfile, "industry", "");
+    $("#editCompanyScale").value = companyEditValue(company, overrides, mappingProfile, "scale", "");
+    $("#editCompanyYear").value = companyEditValue(company, overrides, mappingProfile, "year", String(new Date().getFullYear()));
+    $("#editCompanyAddress").value = companyEditValue(company, overrides, mappingProfile, "address", "");
+    $("#editCompanyEmployeeCount").value = companyEditValue(company, overrides, mappingProfile, "employeeCount", "");
+    $("#editCompanyExposedCount").value = companyEditValue(company, overrides, mappingProfile, "exposedCount", "");
+    $("#editCompanyLegal").value = companyEditValue(company, overrides, mappingProfile, "legalRepresentative", "");
+    $("#editCompanyContact").value = companyEditValue(company, overrides, mappingProfile, "contactName", "");
+    $("#editCompanyPhone").value = companyEditValue(company, overrides, mappingProfile, "contactPhone", "");
+    $("#companyEditModal").hidden = false;
+    document.body.style.overflow = "hidden";
+    setTimeout(() => $("#editCompanyName").focus(), 40);
+  }
+
+  function closeCompanyEditModal() {
+    const modal = $("#companyEditModal");
+    if (!modal || modal.hidden) return;
+    modal.hidden = true;
+    if (!document.body.classList.contains("login-open")) document.body.style.overflow = "";
+  }
+
+  function saveCompanyEditProfile(event) {
+    event.preventDefault();
+    if (!currentEnterprise) return;
+    const companyName = $("#editCompanyName").value.trim();
+    if (!companyName) {
+      showToast("企业名称不能为空。", "无法保存");
+      $("#editCompanyName").focus();
+      return;
+    }
+    const overrides = {
+      companyName,
+      creditCode: $("#editCompanyCredit").value.trim(),
+      industry: $("#editCompanyIndustry").value.trim(),
+      scale: $("#editCompanyScale").value.trim(),
+      year: $("#editCompanyYear").value.trim(),
+      address: $("#editCompanyAddress").value.trim(),
+      employeeCount: $("#editCompanyEmployeeCount").value.trim(),
+      exposedCount: $("#editCompanyExposedCount").value.trim(),
+      legalRepresentative: $("#editCompanyLegal").value.trim(),
+      contactName: $("#editCompanyContact").value.trim(),
+      contactPhone: $("#editCompanyPhone").value.trim()
+    };
+    const now = new Date().toISOString();
+    currentEnterprise.profileOverrides = overrides;
+    currentEnterprise.name = companyName;
+    currentEnterprise.creditCode = overrides.creditCode;
+    currentEnterprise.industry = overrides.industry;
+    currentEnterprise.scale = overrides.scale;
+    currentEnterprise.address = overrides.address;
+    currentEnterprise.legalRepresentative = overrides.legalRepresentative;
+    currentEnterprise.contactName = overrides.contactName;
+    currentEnterprise.contactPhone = overrides.contactPhone;
+    currentEnterprise.updatedAt = now;
+    invalidateEnterpriseMapping(currentEnterprise);
+    appendAuditLog(currentEnterprise, "编辑企业资料", "人工核定企业主数据与联系人信息");
+    saveCompany(currentEnterprise);
+    updateWorkspaceCompanyName(companyName);
+    closeCompanyEditModal();
+    showEnterpriseProfile(currentEnterprise);
+    showToast("企业资料已保存，后续生成文档将使用人工核定字段。", "保存成功");
+  }
+
   function openEnterpriseImportModal() {
     if (!currentEnterprise) {
       showToast("请先登录企业账号后再上传资料。", "尚未登录");
@@ -2272,7 +2455,9 @@
     const existingCategories = Array.isArray(currentEnterprise.importedCategories) ? currentEnterprise.importedCategories : [];
     const categories = Array.from(new Set(existingCategories.concat(newCategories)))
       .filter((category) => allCategories.includes(category));
-    const completeness = Math.min(100, categories.length * 25);
+    const requiredCompleted = REQUIRED_IMPORT_CATEGORIES.filter((category) => categories.includes(category)).length;
+    const optionalCompleted = ["exam", "systems"].filter((category) => categories.includes(category)).length;
+    const completeness = Math.min(100, Math.round(requiredCompleted / REQUIRED_IMPORT_CATEGORIES.length * 80 + optionalCompleted * 10));
     const uploadedAt = new Date().toISOString();
     const existingFiles = getOwnedCompanyFiles(currentEnterprise);
     const mergedFiles = new Map(existingFiles.map((file) => [file.category + "|" + file.name + "|" + file.size, file]));
@@ -2551,6 +2736,22 @@
   $("#openEnterpriseImport").addEventListener("click", openEnterpriseImportModal);
   $("#libraryUploadButton").addEventListener("click", openEnterpriseImportModal);
   $("#dashboardUploadButton").addEventListener("click", openEnterpriseImportModal);
+  $("#employeeImportButton").addEventListener("click", () => {
+    openEnterpriseImportModal();
+    const employeeInput = $('[data-import-category="employees"] input[type="file"]');
+    if (employeeInput) employeeInput.click();
+  });
+  $("#generateSupplementalMaterial").addEventListener("click", () => {
+    setView("generate");
+    showToast("13 类文书由系统按企业、岗位、人员与检测数据自动生成，请选择需要的文档。", "补充资料生成");
+  });
+  $("#editCompanyProfile").addEventListener("click", openCompanyEditModal);
+  $("#companyEditClose").addEventListener("click", closeCompanyEditModal);
+  $("#companyEditCancel").addEventListener("click", closeCompanyEditModal);
+  $("#companyEditForm").addEventListener("submit", saveCompanyEditProfile);
+  $("#companyEditModal").addEventListener("click", (event) => {
+    if (event.target === $("#companyEditModal")) closeCompanyEditModal();
+  });
   $("#view-library").addEventListener("click", (event) => {
     if (event.target.closest("[data-library-upload]")) openEnterpriseImportModal();
   });
@@ -2589,6 +2790,31 @@
     copyText(code).then(() => showToast("企业协同码 " + code + " 已复制，可发给个人账号注册使用。", "复制成功"));
   });
 
+  function ensureDemoCompanyForPersonal() {
+    let company = findCompanyByCode("HDJM-8K3F");
+    if (company) return company;
+    company = {
+      code: "HDJM-8K3F",
+      name: "华东精密制造有限公司（演示）",
+      creditCode: "91320100MA1DEMO001",
+      industry: "金属制品制造",
+      region: "江苏省南京市",
+      account: "demo_hdjm",
+      passwordDigest: buildPasswordDigest("demo_hdjm", "demo123456"),
+      accountScope: "enterprise:demo_hdjm",
+      inviteCode: "HDJM-8K3F",
+      createdAt: new Date().toISOString(),
+      completeness: 0,
+      importedCategories: [],
+      libraryFiles: [],
+      archiveDocuments: [],
+      companyMembers: [],
+      auditLogs: []
+    };
+    companyDirectory = companyDirectory.filter((item) => item.code !== company.code).concat(company);
+    return company;
+  }
+
   // Personal registration requires a verified enterprise code.
   personalCompanyCode.addEventListener("input", () => {
     resetCompanyVerification();
@@ -2602,6 +2828,28 @@
     }
   });
   verifyCompanyCodeButton.addEventListener("click", () => verifyPersonalCompany());
+  $("#fillCompanyCode").addEventListener("click", () => {
+    ensureDemoCompanyForPersonal();
+    personalCompanyCode.value = "HDJM-8K3F";
+    resetCompanyVerification();
+    verifyPersonalCompany();
+  });
+  $("#fillPersonalDemo").addEventListener("click", () => {
+    const company = ensureDemoCompanyForPersonal();
+    personalCompanyCode.value = company.code;
+    resetCompanyVerification();
+    verifyPersonalCompany();
+    $("#personalName").value = "演示成员";
+    $("#personalPhone").value = "13800001234";
+    $("#personalDepartment").value = "安全环保部";
+    $("#personalPosition").value = "安全员";
+    $("#personalAccount").value = "demo_member_" + String(Date.now()).slice(-6);
+    $("#personalPassword").value = "demo123456";
+    $("#personalPasswordConfirm").value = "demo123456";
+    $("#personalAgreement").checked = true;
+    showToast("示例企业、成员信息和密码已填入，可直接提交注册申请。", "演示数据已准备");
+    $("#personalName").focus();
+  });
 
   personalRegisterForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -2642,14 +2890,30 @@
       showFormError(personalRegisterError, "请先阅读并同意个人服务协议和隐私政策。");
       return;
     }
-    currentPersonal = {
+    if (findLoginIdentity(account)) {
+      showFormError(personalRegisterError, "该登录账号已存在，请更换账号。");
+      $("#personalAccount").focus();
+      return;
+    }
+    const company = verifiedCompany;
+    const members = ensureCompanyMembers(company);
+    const member = {
+      id: "member-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 7),
       name: name,
       phone: phone,
       department: department,
       position: position,
       account: account,
-      company: verifiedCompany
+      passwordDigest: buildPasswordDigest(account, password),
+      role: "企业成员",
+      status: "pending",
+      companyCode: company.code,
+      appliedAt: new Date().toISOString()
     };
+    members.push(member);
+    appendAuditLog(company, "提交注册申请", name + "（" + department + " / " + position + "）");
+    saveCompany(company);
+    currentPersonal = member;
     $("#pendingCompanyName").textContent = verifiedCompany.name;
     $("#pendingPersonName").textContent = name;
     $("#pendingCompanyCode").textContent = verifiedCompany.code;
@@ -2659,6 +2923,25 @@
   });
 
   $("#pendingLoginButton").addEventListener("click", () => setAuthView("login", true));
+  $("#pendingDemoEnterButton").addEventListener("click", () => {
+    if (!currentPersonal || !currentPersonal.companyCode) {
+      showToast("未找到待审核的成员申请，请重新提交。", "无法进入");
+      return;
+    }
+    const company = findCompanyByCode(currentPersonal.companyCode);
+    const member = company && ensureCompanyMembers(company).find((item) => item.id === currentPersonal.id);
+    if (!company || !member) {
+      showToast("成员申请记录已不存在，请重新提交。", "无法进入");
+      return;
+    }
+    member.status = "approved";
+    member.approvedAt = new Date().toISOString();
+    appendAuditLog(company, "审核通过成员", member.name + "（" + member.account + "）");
+    saveCompany(company);
+    activateEnterprise(company, member);
+    setView("dashboard");
+    showToast("已模拟管理员审核通过，个人成员账号可正常登录。", "成员已开通");
+  });
 
 
   function setView(viewName, updateHash = true) {
@@ -2738,6 +3021,7 @@
     }
     if (event.key === "Escape") {
       closeModal();
+      closeCompanyEditModal();
       closeEnterpriseImportModal();
       closeMobileNav();
       setAccountMenu(false);
@@ -3103,6 +3387,8 @@
     currentArchivePage = page;
     filterArchiveTable();
   });
+  $("#exportArchiveDirectory").addEventListener("click", exportArchiveDirectory);
+  $("#exportArchivePackage").addEventListener("click", exportArchivePackage);
 
   // Gap priority filter.
   $$("#gapFilters button").forEach((button) => {
@@ -3130,6 +3416,9 @@
   const modalReplaceFile = $("#modalReplaceFile");
   const modalEditDocument = $("#modalEditDocument");
   const modalSaveVersion = $("#modalSaveVersion");
+  const modalSubmitReview = $("#modalSubmitReview");
+  const modalSignDocument = $("#modalSignDocument");
+  const modalArchiveDocument = $("#modalArchiveDocument");
   const modalImportOcr = $("#modalImportOcr");
   const modalReplaceFileInput = $("#modalReplaceFileInput");
   let activeLibraryFileId = null;
@@ -3191,7 +3480,7 @@
     const status = getLibraryStatus(file);
     const parseResult = file.parseResult || {};
     const extension = getFileExtension(file.name).toUpperCase() || "FILE";
-    const tone = { company: "red", positions: "indigo", employees: "amber", systems: "green" };
+    const tone = { company: "red", positions: "indigo", employees: "amber", exam: "green", systems: "slate" };
     modalTitle.textContent = file.parseStatus === "parsed" ? "上传资料核查" : "文件处理详情";
     modalDocName.textContent = file.name;
     modalDocMeta.textContent = (importCategoryLabels[file.category] || "其他资料") + " · " + formatFileSize(file.size) + " · " + getParseSummary(file) + " · 账号 " + currentEnterprise.account + " 独立资料";
@@ -3203,6 +3492,9 @@
     modalEditDocument.hidden = true;
     modalSaveVersion.hidden = true;
     modalDownload.hidden = true;
+    modalSubmitReview.hidden = true;
+    modalSignDocument.hidden = true;
+    modalArchiveDocument.hidden = true;
     modalConfirmReview.hidden = file.parseStatus !== "parsed";
     modalConfirmReview.disabled = false;
     modalConfirmReview.innerHTML = '<svg class="icon"><use href="#i-check"></use></svg>确认已核查';
@@ -3314,6 +3606,9 @@
     modalEditDocument.hidden = true;
     modalSaveVersion.hidden = true;
     modalDownload.hidden = true;
+    modalSubmitReview.hidden = true;
+    modalSignDocument.hidden = true;
+    modalArchiveDocument.hidden = true;
     modalConfirmReview.hidden = true;
     modalFooterNote.textContent = currentEnterprise ? "正式文档正文将在生成服务接入后显示" : "请先登录企业账号";
     modalPreviewBody.innerHTML = previewIssueState("pending", "文档草稿", "当前记录仅包含生成任务元数据，正文尚未接入正式文档生成服务。");
@@ -3368,37 +3663,101 @@
       '<div class="paper-sign-row"><span>来源：' + escapeHtml(archiveDocument.sourceName || "当前企业档案") + '</span><span>更新：' + escapeHtml(formatArchiveDate(archiveDocument.updatedAt || archiveDocument.createdAt)) + '</span></div></div>';
   }
 
-  function downloadArchiveDocument(archiveDocument) {
+  function getExportReadyDocument(archiveDocument) {
+    return Object.assign({}, archiveDocument, {
+      body: getArchiveDocumentBody(archiveDocument)
+    });
+  }
+
+  async function downloadArchiveDocument(archiveDocument) {
     if (!archiveDocument) return;
-    const safeName = String(archiveDocument.name || "生成文档").replace(/[\\/:*?"<>|]+/g, "_");
-    const paragraphs = getArchiveDocumentBody(archiveDocument).split(/\r?\n/).map((line) => line.trim()
-      ? '<p>' + escapeHtml(line) + '</p>'
-      : '<p>&nbsp;</p>').join("");
-    const html = '<!DOCTYPE html><html><head><meta charset="utf-8"><title>' + escapeHtml(archiveDocument.name) + '</title>' +
-      '<style>body{font-family:"Microsoft YaHei","SimSun",serif;font-size:12pt;line-height:1.7;color:#111}h1{font-size:18pt;text-align:center;margin:24pt 0}p{margin:0 0 6pt}.meta{text-align:center;color:#555;font-size:9pt;margin-bottom:18pt}</style></head><body>' +
-      '<h1>' + escapeHtml(archiveDocument.name) + '</h1><div class="meta">' + escapeHtml(archiveDocument.documentNumber + " · " + archiveDocument.version) + '</div>' + paragraphs + '</body></html>';
-    const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = safeName + ".doc";
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 1500);
+    const exporter = window.DocumentExporter;
+    if (!exporter || typeof exporter.createDocxBlob !== "function") {
+      showToast("DOCX 导出组件未加载，请刷新页面后重试。", "导出失败");
+      return;
+    }
+    try {
+      const blob = await exporter.createDocxBlob(getExportReadyDocument(archiveDocument));
+      const fileName = exporter.safeFileName(archiveDocument.name + "_" + archiveDocument.version, "生成文档") + ".docx";
+      exporter.downloadBlob(blob, fileName);
+      const now = new Date().toISOString();
+      currentEnterprise.updatedAt = now;
+      appendAuditLog(currentEnterprise, "下载 DOCX", archiveDocument.documentNumber + " " + archiveDocument.name + "，版本 " + archiveDocument.version);
+      saveCompany(currentEnterprise);
+      showToast("已导出真实 DOCX 文件：" + fileName, "下载已开始");
+    } catch (error) {
+      showToast(error && error.message || "DOCX 生成失败，请稍后重试。", "导出失败");
+    }
+  }
+
+  async function runArchiveExport(button, busyLabel, task, successMessage) {
+    if (!currentEnterprise) {
+      showToast("请先登录企业账号后再导出。", "尚未登录");
+      return;
+    }
+    const documents = ensureArchiveDocuments(currentEnterprise);
+    if (!documents.length) {
+      showToast("当前企业尚未生成可导出的文档。", "没有可导出内容");
+      return;
+    }
+    const exporter = window.DocumentExporter;
+    if (!exporter) {
+      showToast("档案导出组件未加载，请刷新页面后重试。", "导出失败");
+      return;
+    }
+    const originalMarkup = button.innerHTML;
+    button.disabled = true;
+    button.textContent = busyLabel;
+    try {
+      await task(exporter, documents);
+      const now = new Date().toISOString();
+      currentEnterprise.updatedAt = now;
+      appendAuditLog(currentEnterprise, "导出档案", successMessage + "，共 " + documents.length + " 份文档");
+      saveCompany(currentEnterprise);
+      showToast(successMessage, "导出完成");
+    } catch (error) {
+      showToast(error && error.message || "导出失败，请稍后重试。", "导出失败");
+    } finally {
+      button.disabled = false;
+      button.innerHTML = originalMarkup;
+    }
+  }
+
+  function exportArchiveDirectory() {
+    const button = $("#exportArchiveDirectory");
+    runArchiveExport(button, "正在生成目录...", async (exporter, documents) => {
+      const blob = await exporter.createDirectoryCsvBlob(documents);
+      const date = new Date().toISOString().slice(0, 10);
+      const fileName = exporter.safeFileName((currentEnterprise.name || currentEnterprise.account) + "_档案目录_" + date, "档案目录") + ".csv";
+      exporter.downloadBlob(blob, fileName);
+    }, "档案目录 CSV 已导出");
+  }
+
+  function exportArchivePackage() {
+    const button = $("#exportArchivePackage");
+    runArchiveExport(button, "正在打包 DOCX...", async (exporter, documents) => {
+      const exportDocuments = documents.map(getExportReadyDocument);
+      const blob = await exporter.createArchivePackage(currentEnterprise, exportDocuments);
+      const date = new Date().toISOString().slice(0, 10);
+      const fileName = exporter.safeFileName((currentEnterprise.name || currentEnterprise.account) + "_职业健康档案包_" + date, "职业健康档案包") + ".zip";
+      exporter.downloadBlob(blob, fileName);
+    }, "DOCX 档案包 ZIP 已导出");
   }
 
   function showArchiveDocumentEditor() {
     const archiveDocument = getActiveArchiveDocument();
     if (!archiveDocument) return;
-    if (archiveDocument.status === "signed" || archiveDocument.status === "archived") {
-      showToast("已签发或归档文档不允许直接修改，请先创建修订版本。", "当前不可编辑");
+    if (archiveDocument.status !== "draft") {
+      showToast("只有草稿可编辑；待审核、已签发或已归档文档正文已冻结。", "当前不可编辑");
       return;
     }
     renderArchiveDocumentPreview(archiveDocument, true);
     modalEditDocument.hidden = true;
     modalSaveVersion.hidden = false;
     modalDownload.hidden = true;
+    modalSubmitReview.hidden = true;
+    modalSignDocument.hidden = true;
+    modalArchiveDocument.hidden = true;
     modalFooterNote.textContent = "编辑内容保存后会生成新版本，原版本保留在版本记录中。";
     const editor = $("#archiveDocumentEditor");
     if (editor) editor.focus();
@@ -3432,9 +3791,7 @@
     renderLibrary(currentEnterprise);
     renderArchiveAccountData(currentEnterprise);
     renderArchiveDocumentPreview(archiveDocument);
-    modalEditDocument.hidden = false;
-    modalSaveVersion.hidden = true;
-    modalDownload.hidden = false;
+    refreshArchiveDocumentActions(archiveDocument);
     modalFooterNote.textContent = "已保存新版本 " + version + "，当前文档状态为草稿。";
     showToast("已保存 " + version + "，历史版本仍保留。", "保存成功");
   }
@@ -3446,6 +3803,10 @@
       showToast("未找到要重新上传的文档。", "文件不存在");
       return;
     }
+    if (archiveDocument.status !== "draft") {
+      showToast("只有草稿可替换文件；当前文档正文已冻结。", "当前不可替换");
+      return;
+    }
     activeLibraryFileId = null;
     activeArchiveDocumentId = archiveDocument.id;
     modalReplaceFileInput.value = "";
@@ -3455,6 +3816,11 @@
   async function replaceArchiveDocumentFromFile(file) {
     const archiveDocument = getActiveArchiveDocument();
     if (!archiveDocument || !file) return;
+    if (archiveDocument.status !== "draft") {
+      modalReplaceFileInput.value = "";
+      showToast("只有草稿可替换正文；已提交审核的文档正文已冻结。", "当前不可替换");
+      return;
+    }
     try {
       if (!window.LocalParsers || typeof window.LocalParsers.parse !== "function") {
         throw new Error("本地文件解析组件未加载。");
@@ -3489,6 +3855,71 @@
     }
   }
 
+  function getCurrentSignerName() {
+    const mappingProfile = currentEnterprise && currentEnterprise.enterpriseMapping && currentEnterprise.enterpriseMapping.profile || {};
+    const overrides = currentEnterprise && currentEnterprise.profileOverrides || {};
+    return String(mappingProfile.legalRepresentative || overrides.legalRepresentative || currentEnterprise && currentEnterprise.account || "").trim();
+  }
+
+  function refreshArchiveDocumentActions(archiveDocument) {
+    const status = archiveDocument && archiveDocument.status || "draft";
+    const editable = status === "draft";
+    modalReplaceFile.hidden = !editable;
+    modalEditDocument.hidden = !editable;
+    modalSubmitReview.hidden = !editable;
+    modalSignDocument.hidden = status !== "review";
+    modalArchiveDocument.hidden = status !== "signed";
+    modalDownload.hidden = false;
+    modalSaveVersion.hidden = true;
+  }
+
+  function refreshAfterArchiveTransition(archiveDocument, message, title) {
+    saveCompany(currentEnterprise);
+    renderLibrary(currentEnterprise);
+    renderArchiveAccountData(currentEnterprise);
+    openArchiveDocument(archiveDocument.id);
+    showToast(message, title);
+  }
+
+  function submitArchiveDocumentForReview() {
+    const archiveDocument = getActiveArchiveDocument();
+    if (!archiveDocument || archiveDocument.status !== "draft") return;
+    const now = new Date().toISOString();
+    archiveDocument.status = "review";
+    archiveDocument.submittedAt = now;
+    archiveDocument.updatedAt = now;
+    currentEnterprise.updatedAt = now;
+    appendAuditLog(currentEnterprise, "提交审核", archiveDocument.documentNumber + " " + archiveDocument.name);
+    refreshAfterArchiveTransition(archiveDocument, "文档已提交审核，正文已冻结。", "提交成功");
+  }
+
+  function signArchiveDocument() {
+    const archiveDocument = getActiveArchiveDocument();
+    if (!archiveDocument || archiveDocument.status !== "review") return;
+    if (typeof window.confirm === "function" && !window.confirm("确认签发《" + archiveDocument.name + "》？签发后将冻结正文并记录签发人。")) return;
+    const now = new Date().toISOString();
+    archiveDocument.status = "signed";
+    archiveDocument.signer = getCurrentSignerName() || currentEnterprise.account || "企业管理员";
+    archiveDocument.signedAt = now;
+    archiveDocument.updatedAt = now;
+    currentEnterprise.updatedAt = now;
+    appendAuditLog(currentEnterprise, "签发文档", archiveDocument.documentNumber + " " + archiveDocument.name + "，签发人 " + archiveDocument.signer);
+    refreshAfterArchiveTransition(archiveDocument, "文档已签发，签发人与时间已写入档案。", "签发完成");
+  }
+
+  function archiveSignedDocument() {
+    const archiveDocument = getActiveArchiveDocument();
+    if (!archiveDocument || archiveDocument.status !== "signed") return;
+    if (typeof window.confirm === "function" && !window.confirm("确认将已签发文档《" + archiveDocument.name + "》归档？归档后不可再编辑。")) return;
+    const now = new Date().toISOString();
+    archiveDocument.status = "archived";
+    archiveDocument.archivedAt = now;
+    archiveDocument.updatedAt = now;
+    currentEnterprise.updatedAt = now;
+    appendAuditLog(currentEnterprise, "归档文档", archiveDocument.documentNumber + " " + archiveDocument.name);
+    refreshAfterArchiveTransition(archiveDocument, "文档已归档，版本与签发信息已冻结。", "归档完成");
+  }
+
   function openArchiveDocument(documentId) {
     if (!currentEnterprise) {
       showToast("请先登录企业账号后查看档案。", "尚未登录");
@@ -3507,14 +3938,17 @@
     modalDocMeta.textContent = archiveDocument.documentNumber + " · " + meta.label + " · 企业码 " + currentEnterprise.code;
     modalFileIcon.className = "file-icon " + (archiveDocument.iconTone || meta.iconTone);
     modalFileIcon.textContent = archiveDocument.iconLetter || "D";
-    setModalStatus(meta.label, meta.tone, archiveDocument.status === "signed");
-    modalReplaceFile.hidden = false;
+    setModalStatus(meta.label, meta.tone, archiveDocument.status === "signed" || archiveDocument.status === "archived");
     modalImportOcr.hidden = true;
-    modalEditDocument.hidden = false;
-    modalSaveVersion.hidden = true;
-    modalDownload.hidden = false;
     modalConfirmReview.hidden = true;
-    modalFooterNote.textContent = "企业码 " + currentEnterprise.code + " 独立档案 · 支持编辑新版本、下载与重新上传";
+    refreshArchiveDocumentActions(archiveDocument);
+    modalFooterNote.textContent = archiveDocument.status === "draft"
+      ? "草稿可编辑、替换或提交审核；下载为真实 DOCX 文件"
+      : archiveDocument.status === "review"
+        ? "文档已提交审核，正文已冻结，等待企业管理员签发"
+        : archiveDocument.status === "signed"
+          ? "文档已签发并记录签发人，可归档留存"
+          : "文档已归档，正文与签发信息保持只读";
     renderArchiveDocumentPreview(archiveDocument);
     docModal.hidden = false;
     document.body.style.overflow = "hidden";
@@ -3566,6 +4000,25 @@
     }
   });
 
+  $("#dashboardReviewAllButton").addEventListener("click", () => {
+    if (!currentEnterprise) return;
+    const pendingFiles = getOwnedCompanyFiles(currentEnterprise)
+      .filter((file) => file && file.parseStatus === "parsed" && !file.reviewedAt);
+    if (!pendingFiles.length) {
+      showToast("当前没有待核查的已解析文件。", "无需核查");
+      return;
+    }
+    if (typeof window.confirm === "function" && !window.confirm("确认将 " + pendingFiles.length + " 份已解析文件全部标记为已核查？核查后将自动重建企业、岗位、人员和检测数据映射。")) return;
+    const now = new Date().toISOString();
+    pendingFiles.forEach((file) => { file.reviewedAt = now; });
+    currentEnterprise.updatedAt = now;
+    invalidateEnterpriseMapping(currentEnterprise);
+    appendAuditLog(currentEnterprise, "批量核查资料", "一次核查 " + pendingFiles.length + " 份已解析文件");
+    saveCompany(currentEnterprise);
+    showEnterpriseProfile(currentEnterprise);
+    showToast(pendingFiles.length + " 份资料已核查，业务字段映射已同步更新。", "批量核查完成");
+  });
+
   modalConfirmReview.addEventListener("click", () => {
     const file = findActiveLibraryFile();
     if (!file || !currentEnterprise) return;
@@ -3583,6 +4036,9 @@
   });
 
   modalDownload.addEventListener("click", () => downloadArchiveDocument(getActiveArchiveDocument()));
+  modalSubmitReview.addEventListener("click", submitArchiveDocumentForReview);
+  modalSignDocument.addEventListener("click", signArchiveDocument);
+  modalArchiveDocument.addEventListener("click", archiveSignedDocument);
   modalEditDocument.addEventListener("click", showArchiveDocumentEditor);
   modalSaveVersion.addEventListener("click", saveArchiveDocumentVersion);
   modalReplaceFile.addEventListener("click", () => {
@@ -3617,13 +4073,17 @@
   const authPreviewViews = { register: "register", enterprise: "enterprise", personal: "personal" };
   const sessionCompanyCode = readSession("zadocs_session_company_code");
   const sessionCompany = sessionCompanyCode ? findCompanyByCode(sessionCompanyCode) : null;
-  const hasInvalidSession = Boolean(sessionCompanyCode) && !sessionCompany;
+  const sessionMemberAccount = readSession("zadocs_session_member_account");
+  const sessionMember = sessionCompany && sessionMemberAccount
+    ? ensureCompanyMembers(sessionCompany).find((member) => normalizeAccount(member.account) === normalizeAccount(sessionMemberAccount))
+    : null;
+  const hasInvalidSession = Boolean(sessionCompanyCode) && (!sessionCompany || (sessionMemberAccount && !sessionMember));
   const requiresLogin = readSession("zadocs_logged_out") === "1" || forceLoginPreview || Boolean(authPreview) || hasInvalidSession;
   if (requiresLogin || !sessionCompany) {
     showLoginScreen(false);
     if (authPreviewViews[authPreview]) setAuthView(authPreviewViews[authPreview]);
   } else {
-    activateEnterprise(sessionCompany);
+    activateEnterprise(sessionCompany, sessionMember);
     setView(resolveViewFromHash(), false);
   }
   if (previewParams.get("menu") === "1" && !forceLoginPreview) setAccountMenu(true);

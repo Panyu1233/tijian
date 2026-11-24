@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="企业职业健康文档管理平台本地原型，覆盖企业建档、资料归集、文档生成、审核签发与归档追溯。">
   <title>职安文档云 · 企业管理与文档生成原型</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%232f6bff'/%3E%3Cpath d='M18 17h20l8 8v22H18z' fill='white'/%3E%3Cpath d='M38 17v9h9' fill='none' stroke='%232f6bff' stroke-width='3'/%3E%3C/svg%3E">
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -62,13 +63,13 @@
           <svg class="icon"><use href="#i-building"></use></svg><span>企业档案</span><span class="nav-badge">1</span>
         </button>
         <button class="nav-item" type="button" data-view="library">
-          <svg class="icon"><use href="#i-folder"></use></svg><span>资料中心</span><span class="nav-count">43</span>
+          <svg class="icon"><use href="#i-folder"></use></svg><span>资料中心</span><span class="nav-count">0</span>
         </button>
         <button class="nav-item" type="button" data-view="generate">
-          <svg class="icon"><use href="#i-doc-plus"></use></svg><span>文档生成</span><span class="nav-count">6</span>
+          <svg class="icon"><use href="#i-doc-plus"></use></svg><span>文档生成</span><span class="nav-count">13</span>
         </button>
         <button class="nav-item" type="button" data-view="archive">
-          <svg class="icon"><use href="#i-archive"></use></svg><span>档案库</span>
+          <svg class="icon"><use href="#i-archive"></use></svg><span>档案库</span><span class="nav-count">0</span>
         </button>
 
         <p class="nav-label nav-label-spaced" hidden>项目诊断</p>
@@ -204,7 +205,7 @@
                 </div>
                 <div class="workflow-step done">
                   <div class="step-dot"><svg class="icon"><use href="#i-check"></use></svg></div>
-                  <strong>资料归集</strong><span>四类资料 43 份</span>
+                  <strong>资料归集</strong><span>三类必交 + 体检建议</span>
                 </div>
                 <div class="workflow-step active">
                   <div class="step-dot">3</div>
@@ -248,7 +249,7 @@
                 </button>
                 <button class="todo-item" type="button" data-go="generate">
                   <span class="todo-priority mid">中</span>
-                  <span class="todo-copy"><strong>校验 4 份待生成文档</strong><small>模板 v2.3 · 5 分钟前更新</small></span>
+                  <span class="todo-copy"><strong>校验 13 类待生成文档</strong><small>模板 v3.0 · 全流程已接入</small></span>
                   <svg class="icon small"><use href="#i-chevron"></use></svg>
                 </button>
               </div>
@@ -277,7 +278,7 @@
                 <thead><tr><th>文档包 / 文档</th><th>适用范围</th><th>依赖条件</th><th>状态</th><th>更新时间</th><th></th></tr></thead>
                 <tbody id="dashboardTaskBody">
                   <tr>
-                    <td><div class="doc-cell"><span class="file-icon blue">W</span><div><strong>职业病危害因素告知书</strong><small>DOCX · 模板 v2.3</small></div></div></td>
+                    <td><div class="doc-cell"><span class="file-icon blue">W</span><div><strong>职业病危害因素告知书</strong><small>DOCX · 模板 v3.0</small></div></div></td>
                     <td>24 个岗位</td><td><span class="dependency ok"><svg class="icon tiny"><use href="#i-check"></use></svg>岗位映射完整</span></td>
                     <td><span class="status-badge ready">可生成</span></td><td>11-14 09:32</td>
                     <td><button class="row-action" type="button" data-go="generate">处理</button></td>
@@ -318,7 +319,7 @@
             <span class="import-onboarding-icon"><svg class="icon"><use href="#i-upload"></use></svg></span>
             <div class="import-onboarding-copy">
               <strong id="enterpriseImportBannerTitle">新企业空间已创建</strong>
-              <p id="enterpriseImportBannerText">上传营业执照、企业信息表、岗位与员工资料后，系统会自动识别并补充企业档案。</p>
+              <p id="enterpriseImportBannerText">上传企业基本信息表（或营业执照）、人员名单和职业病危害检测报告后，系统会自动识别并同步企业、岗位与人员数据。</p>
               <div class="import-code-line"><span>企业协同码</span><code id="newCompanyCode">QY-XXXX-26</code><button id="copyNewCompanyCode" type="button">复制</button></div>
             </div>
             <div class="import-onboarding-actions">
@@ -410,42 +411,49 @@
           </div>
 
           <div class="library-summary">
-            <div class="library-summary-copy"><span class="summary-icon"><svg class="icon"><use href="#i-folder"></use></svg></span><div><strong>43</strong><span>份资料已归集</span></div></div>
+            <div class="library-summary-copy"><span class="summary-icon"><svg class="icon"><use href="#i-folder"></use></svg></span><div><strong>0</strong><span>份资料已归集</span></div></div>
             <div class="summary-divider"></div>
-            <div class="summary-metric"><span class="metric-dot complete"></span><strong>34</strong><span>校验通过</span></div>
-            <div class="summary-metric"><span class="metric-dot review"></span><strong>7</strong><span>待补充</span></div>
-            <div class="summary-metric"><span class="metric-dot missing"></span><strong>2</strong><span>校验异常</span></div>
-            <div class="summary-action"><span>本年度目标 56 份</span><div class="summary-progress"><i style="width:77%"></i></div><b>77%</b></div>
+            <div class="summary-metric"><span class="metric-dot complete"></span><strong>0</strong><span>已解析</span></div>
+            <div class="summary-metric"><span class="metric-dot review"></span><strong>0</strong><span>待核查</span></div>
+            <div class="summary-metric"><span class="metric-dot missing"></span><strong>0</strong><span>解析异常</span></div>
+            <div class="summary-action"><span>三类必选资料完整度</span><div class="summary-progress"><i style="width:0%"></i></div><b>0%</b></div>
           </div>
 
           <div class="category-grid">
             <article class="category-card">
               <div class="category-top"><span class="category-icon blue"><svg class="icon"><use href="#i-building"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看企业资质与制度资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
-              <h3>企业资质与制度</h3><p>营业执照、制度、预案、组织架构</p>
-              <div class="category-count"><strong>14</strong><span>/ 16 份</span><b class="health good">完整度 88%</b></div>
-              <div class="progress-track"><span style="width:88%"></span></div>
-              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>12 已校验</span><span class="warning-text">2 待补充</span></div>
+              <h3>企业主体资料</h3><p>营业执照 / 企业基本信息表</p>
+              <div class="category-count"><strong>0</strong><span>/ 1 份</span><b class="health low">待上传</b></div>
+              <div class="progress-track"><span style="width:0%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>0 已解析</span><span class="danger-text">待上传</span></div>
             </article>
             <article class="category-card">
               <div class="category-top"><span class="category-icon indigo"><svg class="icon"><use href="#i-shield"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看岗位与防护资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
-              <h3>岗位与防护</h3><p>岗位说明、危害因素、检测报告、防护用品</p>
-              <div class="category-count"><strong>11</strong><span>/ 15 份</span><b class="health mid">完整度 73%</b></div>
-              <div class="progress-track amber"><span style="width:73%"></span></div>
-              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>8 已校验</span><span class="warning-text">4 待补充</span></div>
+              <h3>岗位与检测</h3><p>职业病危害检测报告</p>
+              <div class="category-count"><strong>0</strong><span>/ 1 份</span><b class="health low">待上传</b></div>
+              <div class="progress-track amber"><span style="width:0%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>0 已解析</span><span class="danger-text">待上传</span></div>
             </article>
             <article class="category-card">
               <div class="category-top"><span class="category-icon amber"><svg class="icon"><use href="#i-people"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看员工档案资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
-              <h3>员工与监护档案</h3><p>员工名册、体检结果、告知签收、复查记录</p>
-              <div class="category-count"><strong>6</strong><span>/ 18 份</span><b class="health low">完整度 33%</b></div>
-              <div class="progress-track red"><span style="width:33%"></span></div>
-              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>5 已校验</span><span class="danger-text">关键缺口</span></div>
+              <h3>员工名册</h3><p>人员名单 / 体检名单</p>
+              <div class="category-count"><strong>0</strong><span>/ 1 份</span><b class="health low">待上传</b></div>
+              <div class="progress-track red"><span style="width:0%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>0 已解析</span><span class="danger-text">待上传</span></div>
             </article>
             <article class="category-card">
               <div class="category-top"><span class="category-icon green"><svg class="icon"><use href="#i-doc-plus"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="演示：查看科普与服务资料"><svg class="icon"><use href="#i-more"></use></svg></button></div>
-              <h3>科普与服务</h3><p>培训记录、宣传材料、服务记录</p>
-              <div class="category-count"><strong>12</strong><span>/ 12 份</span><b class="health good">完整度 100%</b></div>
-              <div class="progress-track green"><span style="width:100%"></span></div>
-              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>12 已校验</span><span class="complete-text">已完成</span></div>
+              <h3>补充制度</h3><p>现有制度、预案、培训等可选资料</p>
+              <div class="category-count"><strong>0</strong><span>/ 1 份</span><b class="health low">可选</b></div>
+              <div class="progress-track green"><span style="width:0%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>0 已解析</span><span class="warning-text">可选补充</span></div>
+            </article>
+            <article class="category-card">
+              <div class="category-top"><span class="category-icon red"><svg class="icon"><use href="#i-check"></use></svg></span><button class="icon-button tiny-button" type="button" data-toast="查看体检报告归集情况"><svg class="icon"><use href="#i-more"></use></svg></button></div>
+              <h3>职业健康体检</h3><p>体检报告 / 复查结论（建议）</p>
+              <div class="category-count"><strong>0</strong><span>/ 1 份</span><b class="health low">建议补充</b></div>
+              <div class="progress-track red"><span style="width:0%"></span></div>
+              <div class="category-foot"><span><svg class="icon tiny"><use href="#i-check"></use></svg>0 已解析</span><span class="danger-text">建议补充</span></div>
             </article>
           </div>
 
@@ -507,7 +515,7 @@
               <label class="form-field"><span>企业</span><select id="generateCompanySelect"><option>华东精密制造（示例）</option><option>无其他企业</option></select></label>
               <label class="form-field"><span>年度</span><select><option>2026 年度</option><option>2025 年度</option></select></label>
               <label class="form-field"><span>文档包</span><select><option>年度职业健康管理资料包</option><option>专项检查资料包</option></select></label>
-              <label class="form-field"><span>模板集</span><select><option>职业健康模板集 v2.3</option><option>职业健康模板集 v2.2</option></select></label>
+              <label class="form-field"><span>模板集</span><select><option>职业健康模板集 v3.0（13 类）</option><option>职业健康模板集 v2.3（历史）</option></select></label>
             </div>
             <div class="config-meta"><span><svg class="icon tiny"><use href="#i-check"></use></svg>规则版本：2026-11-10</span><span><svg class="icon tiny"><use href="#i-clock"></use></svg>预计生成耗时 2–4 分钟</span><span><svg class="icon tiny"><use href="#i-shield"></use></svg>生成过程不会修改原始资料</span></div>
           </article>
@@ -515,7 +523,7 @@
           <article class="panel generation-panel">
             <div class="panel-head">
               <div><h2>可生成文档</h2><p>已根据当前企业档案完成初步条件检查</p></div>
-              <div class="generation-summary"><span class="summary-chip ready" id="generationReadySummary">4 份可生成</span><span class="summary-chip blocked" id="generationBlockedSummary">2 份已阻断</span></div>
+              <div class="generation-summary"><span class="summary-chip ready" id="generationReadySummary">0 份可生成</span><span class="summary-chip blocked" id="generationBlockedSummary">13 份待检查</span></div>
             </div>
             <div class="selection-toolbar">
               <label class="checkbox-label"><input type="checkbox" id="selectAllDocs"><span class="custom-check"></span>全选可生成文档</label>
@@ -531,19 +539,19 @@
               </table>
             </div>
             <div class="generation-footer">
-              <div class="footer-selection"><span class="selection-ring"><strong id="footerCount">0</strong>/<span id="footerTotal">6</span></span><div><strong>准备生成 <span id="footerSelectedLabel">0 份</span></strong><small>校验通过后将创建文档草稿</small></div></div>
+              <div class="footer-selection"><span class="selection-ring"><strong id="footerCount">0</strong>/<span id="footerTotal">13</span></span><div><strong>准备生成 <span id="footerSelectedLabel">0 份</span></strong><small>校验通过后将创建文档草稿</small></div></div>
               <div class="footer-actions"><button class="button button-secondary" type="button" data-go="library">补充资料</button><button class="button button-primary" type="button" id="generateDocs" disabled>生成所选文档<svg class="icon"><use href="#i-arrow"></use></svg></button></div>
             </div>
             <div class="generation-progress" id="generationProgress" hidden><div><span>正在生成文档...</span><strong id="generationProgressText">0%</strong></div><div class="linear-progress"><span id="generationProgressBar" style="width:0%"></span></div><p id="generationProgressNote">正在加载模板与字段映射</p></div>
           </article>
 
-          <div class="blocked-notice"><span class="blocked-notice-icon"><svg class="icon"><use href="#i-alert"></use></svg></span><div><strong id="generationBlockedTitle">文档生成条件</strong><p id="generationBlockedText">员工监护档案依赖员工名册与体检结果，年度评估报告依赖完整检测汇总。系统不会使用缺失数据生成占位内容，避免产生无法签发或责任不清的文档。</p></div><button class="text-link" type="button" data-go="gaps">查看规则说明<svg class="icon tiny"><use href="#i-arrow"></use></svg></button></div>
+          <div class="blocked-notice"><span class="blocked-notice-icon"><svg class="icon"><use href="#i-alert"></use></svg></span><div><strong id="generationBlockedTitle">文档生成条件</strong><p id="generationBlockedText">企业主体资料、人员名单和职业病危害检测报告是三类必交依据；体检报告缺失时，监护档案会明确标注待补充，不编造检查结论，也不阻断其他文档生成。</p></div><button class="text-link" type="button" data-go="gaps">查看规则说明<svg class="icon tiny"><use href="#i-arrow"></use></svg></button></div>
         </section>
 
         <section class="view" id="view-archive" data-title="档案库">
           <div class="page-heading">
             <div><p class="eyebrow">受控文档 · 版本与留存</p><h1>档案库</h1><p>每个企业拥有独立档案库，仅展示当前企业生成、审核与归档的受控文档。</p></div>
-            <div class="heading-actions"><button class="button button-secondary" type="button" data-toast="演示：打开档案移交清单"><svg class="icon"><use href="#i-refresh"></use></svg>档案移交</button><button class="button button-primary" type="button" data-toast="演示：已导出档案目录"><svg class="icon"><use href="#i-download"></use></svg>导出目录</button></div>
+            <div class="heading-actions"><button class="button button-secondary" type="button" data-toast="演示：打开档案移交清单"><svg class="icon"><use href="#i-refresh"></use></svg>档案移交</button><button class="button button-secondary" type="button" id="exportArchiveDirectory"><svg class="icon"><use href="#i-download"></use></svg>导出目录</button><button class="button button-primary" type="button" id="exportArchivePackage"><svg class="icon"><use href="#i-archive"></use></svg>导出档案包</button></div>
           </div>
 
           <div class="scope-banner archive-scope-banner">
@@ -613,7 +621,7 @@
               <div class="panel-head"><div><h2>能力覆盖度</h2><p>面向“企业管理 + 文档生成”的八项基础能力</p></div><span class="soft-badge">目标 ≥ 80%</span></div>
               <div class="coverage-list">
                 <div class="coverage-item"><div><span>企业主数据</span><b>30%</b></div><div><i style="width:30%"></i><em></em></div><small>已有字段表，缺少可维护的数据模型与校验</small></div>
-                <div class="coverage-item"><div><span>资料归集</span><b>55%</b></div><div><i style="width:55%"></i><em></em></div><small>已有四类资料要求，缺少上传、解析、映射与版本管理</small></div>
+                <div class="coverage-item"><div><span>资料归集</span><b>55%</b></div><div><i style="width:55%"></i><em></em></div><small>已接入五类资料上传、解析、核查、字段映射与版本记录</small></div>
                 <div class="coverage-item"><div><span>规则矩阵</span><b>20%</b></div><div><i style="width:20%"></i><em></em></div><small>岗位、危害、体检项目与文档之间尚未结构化</small></div>
                 <div class="coverage-item"><div><span>模板引擎</span><b>35%</b></div><div><i style="width:35%"></i><em></em></div><small>有文档样例，缺少字段占位符、条件段落与版本控制</small></div>
                 <div class="coverage-item"><div><span>生成工作台</span><b>25%</b></div><div><i style="width:25%"></i><em></em></div><small>缺少批量生成、任务进度、失败重试与结果追踪</small></div>
@@ -668,7 +676,7 @@
       <div class="modal-body enterprise-import-body">
         <div class="import-modal-tip"><svg class="icon"><use href="#i-shield"></use></svg><span>当前为本地离线预览，文件不会上传服务器。系统会在浏览器内提取 PDF 文字、Excel 表格与 Word 文本，仅保存解析摘要，不保存原始文件。</span></div>
                 <div class="upload-required-strip">
-          <div><strong>3 类必选 + 1 类可选</strong><span>不限制具体文件名，系统按文件名自动归类，也可在待识别列表中手动调整。</span></div>
+          <div><strong>3 类必选 + 1 类建议 + 其他可选</strong><span>必选：企业主体、人员名单、职业病危害检测报告；建议：体检报告；制度及其他资料可选。</span></div>
           <button class="button button-secondary button-sm" id="enterpriseGlobalUploadButton" type="button"><svg class="icon"><use href="#i-upload"></use></svg>批量选择文件</button>
           <input id="enterpriseGlobalFileInput" type="file" multiple accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.json" hidden>
         </div>
@@ -686,12 +694,17 @@
           <label class="file-import-card required" data-import-category="positions">
             <input type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.docx,.txt,.json">
             <span class="file-import-icon amber"><svg class="icon"><use href="#i-alert"></use></svg></span>
-            <div><span class="requirement-badge">必选</span><strong>岗位与危害因素</strong><p>岗位清单、危害因素、检测报告</p><small>点击选择文件</small></div>
+            <div><span class="requirement-badge">必选</span><strong>职业病危害检测报告</strong><p>工作场所检测、评价报告</p><small>点击选择文件</small></div>
+          </label>
+          <label class="file-import-card optional suggested" data-import-category="exam">
+            <input type="file" multiple accept=".xlsx,.xls,.csv,.pdf,.docx,.txt,.json">
+            <span class="file-import-icon green"><svg class="icon"><use href="#i-people"></use></svg></span>
+            <div><span class="requirement-badge optional">建议</span><strong>职业健康体检报告</strong><p>个人或汇总体检报告、复查结论</p><small>缺失不阻断，监护档案标注待补充</small></div>
           </label>
           <label class="file-import-card optional" data-import-category="systems">
             <input type="file" multiple accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.json">
             <span class="file-import-icon green"><svg class="icon"><use href="#i-folder"></use></svg></span>
-            <div><span class="requirement-badge optional">可选</span><strong>制度与补充资料</strong><p>管理制度、证照、其他补充材料</p><small>点击选择文件</small></div>
+            <div><span class="requirement-badge optional">可选</span><strong>制度与其他补充资料</strong><p>制度、预案、培训、其他材料</p><small>点击选择文件</small></div>
           </label>
         </div>
         <div class="enterprise-replacement-banner" id="enterpriseReplacementBanner" hidden>
@@ -752,7 +765,10 @@
           <button class="button button-secondary" type="button" id="modalImportOcr" hidden><svg class="icon"><use href="#i-refresh"></use></svg>导入 OCR</button>
           <button class="button button-secondary" type="button" id="modalEditDocument" hidden><svg class="icon"><use href="#i-doc-plus"></use></svg>编辑正文</button>
           <button class="button button-primary" type="button" id="modalSaveVersion" hidden><svg class="icon"><use href="#i-check"></use></svg>保存新版本</button>
-          <button class="button button-secondary" type="button" id="modalDownload" hidden><svg class="icon"><use href="#i-download"></use></svg><span>下载文件</span></button>
+          <button class="button button-secondary" type="button" id="modalDownload" hidden><svg class="icon"><use href="#i-download"></use></svg><span>下载 DOCX</span></button>
+          <button class="button button-primary" type="button" id="modalSubmitReview" hidden><svg class="icon"><use href="#i-check"></use></svg>提交审核</button>
+          <button class="button button-primary" type="button" id="modalSignDocument" hidden><svg class="icon"><use href="#i-shield"></use></svg>确认签发</button>
+          <button class="button button-primary" type="button" id="modalArchiveDocument" hidden><svg class="icon"><use href="#i-archive"></use></svg>归档</button>
           <button class="button button-primary" type="button" id="modalConfirmReview" hidden><svg class="icon"><use href="#i-check"></use></svg>确认已核查</button>
           <button class="button button-secondary" type="button" id="modalCancel">关闭</button>
         </div>
@@ -761,7 +777,6 @@
   </div>
 
 
-  <input id="ocrTextFileInput" type="file" accept=".txt,.json" hidden>
   <input id="modalReplaceFileInput" type="file" accept=".pdf,.docx,.xlsx,.xls,.csv,.txt,.json" hidden>
 
   <div class="login-screen" id="loginScreen">
@@ -883,7 +898,7 @@
             </label>
             <div class="quick-register-note">
               <span class="quick-register-icon"><svg class="icon"><use href="#i-upload"></use></svg></span>
-              <div><strong>进入后上传资料即可完善档案</strong><p>支持营业执照、企业信息表、岗位清单、员工名册、制度文件和检测报告，系统将自动识别并归类。</p></div>
+              <div><strong>进入后上传资料即可完善档案</strong><p>支持企业基本信息表或营业执照、人员名单、职业病危害检测报告；体检报告建议补充，制度和演练资料可按需上传。</p></div>
             </div>
             <button class="login-submit auth-submit-spaced" id="enterpriseRegisterSubmit" type="submit">创建并进入企业空间<svg class="icon"><use href="#i-arrow"></use></svg></button>
             <p class="auth-consent-copy">点击注册即表示同意《企业服务协议》和《隐私政策》</p>
@@ -993,6 +1008,7 @@
   <script src="mapping.js" defer></script>
   <script src="parsers.js" defer></script>
   <script src="templates.js" defer></script>
+  <script src="document-export.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>
